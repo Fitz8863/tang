@@ -1,85 +1,104 @@
-#include <stdio.h>
-#include <memory>
-#include <sys/time.h>
-#include "opencv2/core/core.hpp"
-#include "opencv2/highgui/highgui.hpp"
-#include "opencv2/imgproc/imgproc.hpp"
-#include <thread>
+#include <opencv2/opencv.hpp>
 #include <iostream>
+#include <string>
+#include <chrono>
 
-
-int main(int argc, char** argv)
+int main()
 {
+    // ====================== 参数配置 ======================
+    int width = 1920;
+    int height = 1080;
+    int fps = 30;
 
-    int width = 1280;
-    int height = 720;
-    int fps = 60;
+    std::string device = "/dev/video0";
+    std::string rtsp_url = "rtsp://10.60.83.159:8554/rk3588";
 
-    std::string video_name = "/dev/video0";
+    // ====================== Pipeline 1：读取摄像头 (MJPEG) ======================
+    std::string read_pipeline =
+    "v4l2src device=" + device + " ! "
+    "image/jpeg, width=(int)" + std::to_string(width) +
+    ", height=(int)" + std::to_string(height) +
+    ", framerate=" + std::to_string(fps) + "/1 ! "
+    "jpegdec ! "
+    "videoconvert ! video/x-raw, format=BGR ! "
+    "appsink drop=1 max-buffers=1";
 
-    cv::VideoCapture capture;
+    std::cout << "正在打开摄像头 (MJPEG " << width << "x" << height << "@" << fps << "fps)..." << std::endl;
 
+    cv::VideoCapture cap(read_pipeline, cv::CAP_GSTREAMER);
 
-    std::string pipeline = "v4l2src device=" + video_name +
-        " ! image/jpeg, width=" + std::to_string(width) + "+, height=" + std::to_string(height) + "+, framerate=60/1 ! "
-        "jpegdec ! videoconvert ! appsink";
-    capture.open(pipeline, cv::CAP_GSTREAMER);
-
-    // 如果没有GStreamer环境的话使用下面这个
-    // capture.open(std::string(video_name));
-
-    if (!capture.isOpened())
+    if (!cap.isOpened())
     {
-        printf("打开摄像头失败！\n");
+        std::cerr << "错误：无法打开摄像头 pipeline！" << std::endl;
         return -1;
     }
 
-    // FFmpeg 推流命令
-    std::string cmd =
-        "ffmpeg -y "
-        "-f rawvideo -pix_fmt bgr24 -s " + std::to_string(width) + "x" + std::to_string(height) +
-        " -r " + std::to_string(fps) +
-        " -i - "
-        "-c:v h264_rkmpp -preset ultrafast -tune zerolatency "
-        "-fflags nobuffer -flags low_delay "
-        "-rtsp_transport udp "
-        "-f rtsp rtsp://fnas:8554/rk3588";
+    std::cout << "摄像头打开成功！开始推流..." << std::endl;
 
-    struct timeval time;
-    gettimeofday(&time, nullptr);
-    auto beforeTime = time.tv_sec * 1000 + time.tv_usec / 1000;
-    int frames = 0;
+    // ====================== Pipeline 2：RK3588 硬件编码推流（已修正） ======================
+    std::string push_pipeline =
+        "appsrc ! "
+        "videoconvert ! "
+        "video/x-raw,format=NV12,width=" + std::to_string(width) +
+        ",height=" + std::to_string(height) +
+        ",framerate=" + std::to_string(fps) + "/1 ! "
+        "mpph264enc bps=8000000 ! "
+        "h264parse ! "
+        "rtspclientsink location=" + rtsp_url;
 
-    while (capture.isOpened())
+
+    cv::VideoWriter writer(push_pipeline, cv::CAP_GSTREAMER, 0, fps, cv::Size(width, height), true);
+
+    if (!writer.isOpened())
     {
-        cv::Mat frame;          // 存储每一帧图像
-        capture >> frame;       // 从摄像头读取一帧
+        std::cerr << "错误：无法打开推流 pipeline！" << std::endl;
+        std::cerr << "请运行下面命令查看 rtspclientsink 支持的属性：" << std::endl;
+        std::cerr << "gst-inspect-1.0 rtspclientsink" << std::endl;
+        return -1;
+    }
 
-        // 如果读取失败（摄像头断开等），退出循环
+    std::cout << "RTSP 推流已启动 → " << rtsp_url << " (8Mbps)" << std::endl;
+
+    // ====================== FPS 计算 ======================
+    auto last_time = std::chrono::high_resolution_clock::now();
+    float current_fps = 0.0f;
+    int frame_count = 0;
+    auto fps_update_time = last_time;
+
+    // ====================== 主循环 ======================
+    cv::Mat frame;
+    while (true)
+    {
+        cap >> frame;
+
         if (frame.empty())
         {
-            std::cout << "读取帧失败！" << std::endl;
+            std::cerr << "读取摄像头帧失败！" << std::endl;
             break;
         }
 
-        frames++;
-        if (frames >= 60) {
-            gettimeofday(&time, nullptr);
-            auto currentTime = time.tv_sec * 1000 + time.tv_usec / 1000;
-            printf("60帧平均帧率: %.2f fps\n", 60.0 / float(currentTime - beforeTime) * 1000.0);
-            beforeTime = currentTime;
-            frames = 0;
+        auto now = std::chrono::high_resolution_clock::now();
+        frame_count++;
+        float elapsed = std::chrono::duration<float>(now - fps_update_time).count();
+        if (elapsed >= 1.0f)
+        {
+            current_fps = frame_count / elapsed;
+            frame_count = 0;
+            fps_update_time = now;
         }
 
-        // 打开管道写入 FFmpeg
-        FILE* ffmpeg = popen(cmd.c_str(), "w");
-        if (!ffmpeg) {
-            std::cerr << "Failed to open ffmpeg pipe!" << std::endl;
-            return;
-        }
+        std::string fps_text = "FPS: " + std::to_string(int(current_fps));
+        cv::putText(frame, fps_text, cv::Point(frame.cols - 130, 40),
+                    cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(0, 255, 0), 2);
+
+        writer << frame;                 // 送入硬件编码 + 推流
+
     }
 
-    capture.release();
+    cap.release();
+    writer.release();
     cv::destroyAllWindows();
+
+    std::cout << "程序已退出，推流停止。" << std::endl;
     return 0;
 }
