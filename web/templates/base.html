@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>{% block title %}校园安防智能监测系统{% endblock %}</title>
+    
+    <link href="{{ url_for('static', filename='bootstrap/bootstrap.min.css') }}" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    
+    <style>
+        /* 移动端导航按钮 */
+        .mobile-nav-toggle {
+            display: none;
+            position: fixed;
+            top: 16px;
+            left: 16px;
+            z-index: 1060;
+            width: 44px;
+            height: 44px;
+            background: #292524;
+            border: none;
+            border-radius: 10px;
+            color: #fafaf9;
+            font-size: 1.25rem;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .mobile-nav-toggle:active {
+            transform: scale(0.95);
+        }
+        
+        /* 侧边栏遮罩层 */
+        .sidebar-backdrop {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1040;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .sidebar-backdrop.show {
+            display: block;
+            opacity: 1;
+        }
+        
+        /* 移动端侧边栏样式 */
+        @media (max-width: 576px) {
+            .mobile-nav-toggle {
+                display: flex;
+            }
+            
+            .sidebar {
+                position: fixed;
+                left: -280px;
+                width: 260px;
+                transition: left 0.3s ease;
+                z-index: 1050;
+                box-shadow: 4px 0 20px rgba(0, 0, 0, 0.3);
+            }
+            
+            .sidebar.show {
+                left: 0;
+            }
+            
+            .sidebar-brand span, 
+            .sidebar .nav-link span, 
+            .sidebar strong, 
+            .sidebar .sidebar-brand span {
+                display: inline !important;
+            }
+            
+            .sidebar .sidebar-brand {
+                justify-content: flex-start;
+                padding: 20px 16px !important;
+            }
+            
+            .sidebar .nav-link {
+                text-align: left;
+                padding: 12px 16px;
+                margin: 4px 12px;
+                border-left: 3px solid transparent !important;
+                border-bottom: none !important;
+            }
+            
+            .sidebar .nav-link.active {
+                border-left-color: #c2410c !important;
+                border-bottom: none !important;
+            }
+            
+            .sidebar hr {
+                margin: 12px;
+            }
+            
+            .sidebar .dropdown div {
+                margin: 0 12px;
+                padding: 12px !important;
+            }
+            
+            main {
+                padding: 80px 16px 24px 16px !important;
+            }
+        }
+    </style>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- 移动端导航切换按钮 -->
+    <button class="mobile-nav-toggle" onclick="toggleSidebar()">
+        <i class="fas fa-bars"></i>
+    </button>
+    
+    <!-- 侧边栏遮罩层 -->
+    <div class="sidebar-backdrop" onclick="closeSidebar()"></div>
+    
+    <div class="d-flex min-vh-100">
+        <nav class="sidebar d-flex flex-column flex-shrink-0 p-3 text-white">
+            <a class="sidebar-brand d-flex align-items-center mb-4 me-md-auto text-decoration-none" href="{{ url_for('main.index') }}">
+                <i class="fas fa-university me-2"></i>
+                <span class="fs-5 fw-bold">校园安防智能监测</span>
+            </a>
+            <hr>
+            <ul class="nav nav-pills flex-column mb-auto">
+                <li class="nav-item">
+                    <a class="nav-link {% if request.endpoint == 'main.index' %}active{% endif %}" href="{{ url_for('main.index') }}" onclick="closeSidebarOnNavigate()">
+                        <i class="fas fa-home me-2"></i><span>首页</span>
+                    </a>
+                </li>
+                {% if current_user.is_authenticated and current_user.is_admin %}
+                <li class="nav-item">
+                    <a class="nav-link {% if request.endpoint == 'main.monitor' %}active{% endif %}" href="{{ url_for('main.monitor') }}" onclick="closeSidebarOnNavigate()">
+                        <i class="fas fa-video me-2"></i><span>实时监控</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.endpoint == 'main.alerts' %}active{% endif %}" href="{{ url_for('main.alerts') }}" onclick="closeSidebarOnNavigate()">
+                        <i class="fas fa-bell me-2"></i><span>抓拍记录</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.endpoint == 'settings.index' %}active{% endif %}" href="{{ url_for('settings.index') }}" onclick="closeSidebarOnNavigate()">
+                        <i class="fas fa-cog me-2"></i><span>系统设置</span>
+                    </a>
+                </li>
+                {% endif %}
+                {% if current_user.is_authenticated and current_user.is_super_admin %}
+                <li class="nav-item">
+                    <a class="nav-link {% if request.endpoint == 'user_mgmt.index' %}active{% endif %}" href="{{ url_for('user_mgmt.index') }}" onclick="closeSidebarOnNavigate()">
+                        <i class="fas fa-users-cog me-2"></i><span>用户管理</span>
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+            <hr>
+            <div class="dropdown">
+                {% if current_user.is_authenticated %}
+                <div class="d-flex align-items-center text-white text-decoration-none p-2 rounded">
+                    <i class="fas fa-user-circle me-2 fs-5" style="color: #fb923c;"></i>
+                    <strong class="me-auto small">{{ current_user.username }}</strong>
+                    <a href="{{ url_for('auth.logout') }}" class="text-white ms-2" title="退出">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </a>
+                </div>
+                {% else %}
+                <a href="{{ url_for('auth.login') }}" class="nav-link mb-2" onclick="closeSidebarOnNavigate()">
+                    <i class="fas fa-sign-in-alt me-2"></i><span>登录系统</span>
+                </a>
+                <a href="{{ url_for('auth.register') }}" class="nav-link" onclick="closeSidebarOnNavigate()">
+                    <i class="fas fa-user-plus me-2"></i><span>账号注册</span>
+                </a>
+                {% endif %}
+            </div>
+        </nav>
+
+        <main class="flex-grow-1 p-4" style="overflow-y: auto;">
+            {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-info alert-dismissible fade show mb-4" role="alert">
+                            <i class="fas fa-info-circle me-2"></i>{{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" style="filter: invert(1);"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <!-- 实时通知容器 -->
+    <div id="notification-container"></div>
+    
+    <style>
+        #notification-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 10000;
+            width: 320px;
+            max-width: calc(100vw - 40px);
+        }
+        
+        @media (max-width: 576px) {
+            #notification-container {
+                left: 20px;
+                right: 20px;
+                width: auto;
+                bottom: 20px;
+            }
+        }
+    </style>
+
+    <script src="{{ url_for('static', filename='bootstrap/bootstrap.bundle.min.js') }}"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    
+    <script>
+        // 初始化 Socket.IO
+        const socket = io();
+
+        socket.on('connect', () => {
+            console.log('Connected to server via WebSocket');
+        });
+
+        socket.on('new_capture', (data) => {
+            console.log('New capture received:', data);
+            showNotification(data);
+            
+            if (typeof onNewCapture === 'function') {
+                onNewCapture(data);
+            }
+        });
+
+        function showNotification(data) {
+            const container = document.getElementById('notification-container');
+            const toast = document.createElement('div');
+            toast.className = 'fade-in mb-3';
+            toast.style.cssText = `
+                background: #fff;
+                border: 1px solid var(--primary);
+                border-radius: var(--radius-md);
+                padding: 15px;
+                box-shadow: var(--shadow-lg);
+                color: var(--text-primary);
+                overflow: hidden;
+                position: relative;
+            `;
+
+            toast.innerHTML = `
+                <div class="d-flex align-items-center mb-2">
+                    <div class="rounded-circle bg-danger me-2" style="width: 10px; height: 10px; animation: pulse 1s infinite;"></div>
+                    <strong class="me-auto" style="font-size: 0.9rem; color: var(--danger);">检测到新违规行为!</strong>
+                    <small class="text-muted" style="font-size: 0.75rem;">${data.camera_id}</small>
+                    <button type="button" class="btn-close ms-2" style="font-size: 0.6rem;" onclick="this.parentElement.parentElement.remove()"></button>
+                </div>
+                <div class="d-flex gap-3">
+                    <img src="${data.thumbnail}" class="rounded" style="width: 80px; height: 60px; object-fit: cover; border: 1px solid var(--border);">
+                    <div>
+                        <div class="fw-bold mb-1" style="font-size: 0.85rem; color: var(--danger);">${data.violation_type}</div>
+                        <div class="small text-muted"><i class="fas fa-map-marker-alt me-1"></i>${data.location}</div>
+                        <div class="small text-muted"><i class="fas fa-clock me-1"></i>${data.capture_time.split(' ')[1]}</div>
+                    </div>
+                </div>
+                <div style="position: absolute; bottom: 0; left: 0; height: 3px; background: var(--primary); width: 100%; animation: progress 5s linear forwards;"></div>
+            `;
+
+            container.appendChild(toast);
+
+            // 5秒后自动关闭
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(50px)';
+                toast.style.transition = 'all 0.5s ease';
+                setTimeout(() => toast.remove(), 500);
+            }, 5000);
+        }
+    </script>
+    
+    <style>
+        @keyframes progress {
+            from { width: 100%; }
+            to { width: 0%; }
+        }
+    </style>
+    
+    <script>
+        // 侧边栏切换功能
+        function toggleSidebar() {
+            document.querySelector('.sidebar').classList.toggle('show');
+            document.querySelector('.sidebar-backdrop').classList.toggle('show');
+        }
+        
+        function closeSidebar() {
+            document.querySelector('.sidebar').classList.remove('show');
+            document.querySelector('.sidebar-backdrop').classList.remove('show');
+        }
+        
+        function closeSidebarOnNavigate() {
+            if (window.innerWidth <= 576) {
+                setTimeout(closeSidebar, 300);
+            }
+        }
+        
+        // 响应式调整
+        window.addEventListener('resize', function() {
+            if (window.innerWidth > 576) {
+                closeSidebar();
+            }
+        });
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

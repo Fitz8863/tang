@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录 - 校园安防智能监测系统</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='bootstrap/bootstrap.min.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --primary-light: #3b82f6;
+            --accent: #f59e0b;
+            --bg-warm: #fffbf5;
+            --glass-bg: rgba(255, 255, 255, 0.85);
+            --shadow-soft: 0 10px 40px rgba(37, 99, 235, 0.12);
+            --shadow-hover: 0 20px 60px rgba(37, 99, 235, 0.2);
+            --radius-lg: 24px;
+            --radius-md: 16px;
+            --radius-sm: 12px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background: var(--bg-warm);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background-image: 
+                radial-gradient(at 40% 20%, rgba(37, 99, 235, 0.08) 0px, transparent 50%),
+                radial-gradient(at 80% 0%, rgba(245, 158, 11, 0.06) 0px, transparent 50%),
+                radial-gradient(at 0% 80%, rgba(37, 99, 235, 0.06) 0px, transparent 50%);
+        }
+
+        .auth-container {
+            display: flex;
+            width: 100%;
+            max-width: 960px;
+            height: 620px;
+            background: #fff;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-soft);
+            overflow: hidden;
+            animation: containerEnter 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes containerEnter {
+            from { opacity: 0; transform: translateY(30px) scale(0.96); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        /* 左侧视觉区 */
+        .visual-panel {
+            flex: 1.1;
+            position: relative;
+            background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #1d4ed8 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .visual-panel::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(245, 158, 11, 0.15) 0%, transparent 40%),
+                radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.08) 0%, transparent 30%);
+        }
+
+        /* 动态背景装饰 */
+        .bg-decoration {
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+        }
+
+        .bg-circle {
+            position: absolute;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            animation: rotateSlow 30s linear infinite;
+        }
+
+        .bg-circle.c1 { width: 300px; height: 300px; top: -50px; left: -50px; animation-duration: 40s; }
+        .bg-circle.c2 { width: 200px; height: 200px; bottom: 20%; right: -30px; animation-duration: 25s; animation-direction: reverse; }
+        .bg-circle.c3 { width: 150px; height: 150px; top: 40%; left: 10%; animation-duration: 35s; }
+
+        @keyframes rotateSlow {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .visual-content {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            color: #fff;
+            padding: 30px;
+        }
+
+        .visual-icon {
+            font-size: 4rem;
+            margin-bottom: 24px;
+            display: block;
+            animation: iconFloat 4s ease-in-out infinite;
+            text-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        @keyframes iconFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
+        }
+
+        .visual-title {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            letter-spacing: 2px;
+        }
+
+        .visual-subtitle {
+            font-size: 1.1rem;
+            opacity: 0.85;
+            font-weight: 300;
+        }
+
+        /* 脉冲动画圆环 */
+        .pulse-ring {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 120px;
+            height: 120px;
+        }
+
+        .pulse-ring span {
+            position: absolute;
+            inset: 0;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            animation: pulseWave 3s ease-out infinite;
+        }
+
+        .pulse-ring span:nth-child(2) { animation-delay: 1s; }
+        .pulse-ring span:nth-child(3) { animation-delay: 2s; }
+
+        @keyframes pulseWave {
+            0% { transform: scale(0.5); opacity: 1; }
+            100% { transform: scale(2); opacity: 0; }
+        }
+
+        /* 右侧表单区 */
+        .form-panel {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 50px;
+            background: #fff;
+        }
+
+        .form-wrapper {
+            width: 100%;
+            max-width: 380px;
+        }
+
+        .form-header {
+            text-align: center;
+            margin-bottom: 36px;
+        }
+
+        .form-header .logo {
+            width: 64px;
+            height: 64px;
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            box-shadow: 0 8px 24px rgba(37, 99, 235, 0.25);
+        }
+
+        .form-header .logo i {
+            font-size: 1.75rem;
+            color: #fff;
+        }
+
+        .form-header h2 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 8px;
+        }
+
+        .form-header p {
+            color: #64748b;
+            font-size: 0.95rem;
+        }
+
+        /* 表单样式 */
+        .input-group-custom {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .input-group-custom label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #475569;
+            margin-bottom: 8px;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .input-wrapper i {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+            font-size: 1rem;
+            transition: color 0.3s;
+        }
+
+        .input-wrapper input {
+            width: 100%;
+            padding: 14px 16px 14px 48px;
+            border: 2px solid #e2e8f0;
+            border-radius: var(--radius-md);
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            background: #f8fafc;
+            color: #1e293b;
+        }
+
+        .input-wrapper input::placeholder {
+            color: #94a3b8;
+        }
+
+        .input-wrapper input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: #fff;
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+        }
+
+        .input-wrapper input:focus + i,
+        .input-wrapper input:focus ~ i {
+            color: var(--primary);
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #94a3b8;
+            cursor: pointer;
+            padding: 4px;
+            transition: color 0.3s;
+        }
+
+        .password-toggle:hover {
+            color: var(--primary);
+        }
+
+        /* 复选框 */
+        .remember-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+        }
+
+        .checkbox-custom {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+
+        .checkbox-custom input {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--primary);
+            cursor: pointer;
+        }
+
+        .checkbox-custom span {
+            font-size: 0.9rem;
+            color: #64748b;
+        }
+
+        /* 提交按钮 */
+        .btn-submit {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            border: none;
+            border-radius: var(--radius-md);
+            color: #fff;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 16px rgba(37, 99, 235, 0.3);
+            letter-spacing: 2px;
+        }
+
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(37, 99, 235, 0.4);
+        }
+
+        .btn-submit:active {
+            transform: translateY(0);
+        }
+
+        /* 分割线 */
+        .divider {
+            display: flex;
+            align-items: center;
+            margin: 28px 0;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: #e2e8f0;
+        }
+
+        .divider span {
+            padding: 0 16px;
+            font-size: 0.85rem;
+            color: #94a3b8;
+        }
+
+        /* 链接 */
+        .auth-link {
+            text-align: center;
+            color: #64748b;
+            font-size: 0.95rem;
+        }
+
+        .auth-link a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+            margin-left: 6px;
+            transition: color 0.3s;
+        }
+
+        .auth-link a:hover {
+            color: var(--primary-dark);
+            text-decoration: underline;
+        }
+
+        /* 提示消息 */
+        .alert-custom {
+            padding: 14px 18px;
+            border-radius: var(--radius-sm);
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: slideDown 0.4s ease;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .alert-custom.error {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #dc2626;
+        }
+
+        .alert-custom.success {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            color: #16a34a;
+        }
+
+        /* 响应式 */
+        @media (max-width: 768px) {
+            .auth-container {
+                flex-direction: column;
+                height: auto;
+                max-width: 440px;
+            }
+
+            .visual-panel {
+                height: 180px;
+                flex: none;
+            }
+
+            .visual-icon { font-size: 2rem; }
+            .visual-title { font-size: 1.25rem; }
+            .visual-subtitle { font-size: 0.85rem; }
+
+            .form-panel { padding: 32px 24px; }
+            .pulse-ring { display: none; }
+        }
+        
+        @media (max-width: 480px) {
+            .auth-container {
+                margin: 10px;
+                max-width: calc(100% - 20px);
+                border-radius: 12px;
+            }
+            
+            .visual-panel {
+                height: 140px;
+            }
+            
+            .visual-icon { font-size: 1.75rem; }
+            .visual-title { font-size: 1.1rem; }
+            .visual-subtitle { font-size: 0.8rem; }
+            
+            .form-panel { padding: 24px 20px; }
+            
+            .form-header .logo-icon {
+                width: 48px;
+                height: 48px;
+            }
+            
+            .form-header h2 {
+                font-size: 1.25rem;
+            }
+            
+            .form-header p {
+                font-size: 0.85rem;
+            }
+            
+            .input-wrapper input {
+                padding: 12px 14px 12px 40px;
+                font-size: 0.9rem;
+            }
+            
+            .btn-submit {
+                padding: 12px;
+                font-size: 0.9rem;
+            }
+            
+            .auth-link {
+                font-size: 0.85rem;
+                margin-top: 20px;
+            }
+            
+            .alert-custom {
+                padding: 12px 14px;
+                font-size: 0.85rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <!-- 左侧视觉区 -->
+        <div class="visual-panel">
+            <div class="bg-decoration">
+                <div class="bg-circle c1"></div>
+                <div class="bg-circle c2"></div>
+                <div class="bg-circle c3"></div>
+            </div>
+            <div class="pulse-ring">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+            <div class="visual-content">
+                <i class="fas fa-shield-heart visual-icon"></i>
+                <h1 class="visual-title">平安校园</h1>
+                <p class="visual-subtitle">智能监测 · 科技守护</p>
+            </div>
+        </div>
+
+        <!-- 右侧表单区 -->
+        <div class="form-panel">
+            <div class="form-wrapper">
+                <div class="form-header">
+                    <div class="logo">
+                        <i class="fas fa-university"></i>
+                    </div>
+                    <h2>欢迎回来</h2>
+                    <p>登录您的校园安防账号</p>
+                </div>
+
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert-custom {{ 'error' if category == 'danger' else 'success' }}">
+                                <i class="fas {{ 'fa-exclamation-circle' if category == 'danger' else 'fa-check-circle' }}"></i>
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <form method="POST">
+                    <div class="input-group-custom">
+                        <label>用户名</label>
+                        <div class="input-wrapper">
+                            <input type="text" name="username" placeholder="请输入用户名" required>
+                            <i class="fas fa-user"></i>
+                        </div>
+                    </div>
+
+                    <div class="input-group-custom">
+                        <label>密码</label>
+                        <div class="input-wrapper">
+                            <input type="password" name="password" id="loginPassword" placeholder="请输入密码" required>
+                            <i class="fas fa-lock"></i>
+                            <button type="button" class="password-toggle" onclick="togglePassword('loginPassword', this)">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="remember-row">
+                        <label class="checkbox-custom">
+                            <input type="checkbox" name="remember" id="remember">
+                            <span>记住我</span>
+                        </label>
+                    </div>
+
+                    <button type="submit" class="btn-submit">
+                        登 录
+                    </button>
+                </form>
+
+                <div class="auth-link">
+                    还没有账号？<a href="{{ url_for('auth.register') }}">立即注册</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function togglePassword(inputId, btn) {
+            const input = document.getElementById(inputId);
+            const icon = btn.querySelector('i');
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+    </script>
+    <script src="{{ url_for('static', filename='bootstrap/bootstrap.bundle.min.js') }}"></script>
+</body>
+</html>
