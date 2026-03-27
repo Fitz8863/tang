@@ -1,0 +1,16 @@
+mqtt:
+  server: "fnas:1883"
+  topic: "RK3588/info"
+  publish_interval: 1
+
+camera:
+  device: "/dev/video0"
+  width: 1920
+  height: 1080
+  fps: 30
+  rtsp_url: "rtsp://fnas:8554/rk3588"
+
+info:
+  id: "001"
+  location: "生产车间A区"
+  http_url: "http://fnas:8889/jetson1"
