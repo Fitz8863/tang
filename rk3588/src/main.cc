@@ -1,104 +1,47 @@
-#include <opencv2/opencv.hpp>
 #include <iostream>
-#include <string>
-#include <chrono>
+#include <memory>
+#include "camera_status.h"
+#include "capture_thread.h"
+#include "publisher_thread.h"
+#include <yaml-cpp/yaml.h>
 
-int main()
-{
-    // ====================== 参数配置 ======================
-    int width = 1920;
-    int height = 1080;
-    int fps = 30;
-
-    std::string device = "/dev/video0";
-    std::string rtsp_url = "rtsp://10.60.83.159:8554/rk3588";
-
-    // ====================== Pipeline 1：读取摄像头 (MJPEG) ======================
-    std::string read_pipeline =
-    "v4l2src device=" + device + " ! "
-    "image/jpeg, width=(int)" + std::to_string(width) +
-    ", height=(int)" + std::to_string(height) +
-    ", framerate=" + std::to_string(fps) + "/1 ! "
-    "jpegdec ! "
-    "videoconvert ! video/x-raw, format=BGR ! "
-    "appsink drop=1 max-buffers=1";
-
-    std::cout << "正在打开摄像头 (MJPEG " << width << "x" << height << "@" << fps << "fps)..." << std::endl;
-
-    cv::VideoCapture cap(read_pipeline, cv::CAP_GSTREAMER);
-
-    if (!cap.isOpened())
-    {
-        std::cerr << "错误：无法打开摄像头 pipeline！" << std::endl;
-        return -1;
-    }
-
-    std::cout << "摄像头打开成功！开始推流..." << std::endl;
-
-    // ====================== Pipeline 2：RK3588 硬件编码推流（已修正） ======================
-    std::string push_pipeline =
-        "appsrc ! "
-        "videoconvert ! "
-        "video/x-raw,format=NV12,width=" + std::to_string(width) +
-        ",height=" + std::to_string(height) +
-        ",framerate=" + std::to_string(fps) + "/1 ! "
-        "mpph264enc bps=8000000 ! "
-        "h264parse ! "
-        "rtspclientsink location=" + rtsp_url;
-
-
-    cv::VideoWriter writer(push_pipeline, cv::CAP_GSTREAMER, 0, fps, cv::Size(width, height), true);
-
-    if (!writer.isOpened())
-    {
-        std::cerr << "错误：无法打开推流 pipeline！" << std::endl;
-        std::cerr << "请运行下面命令查看 rtspclientsink 支持的属性：" << std::endl;
-        std::cerr << "gst-inspect-1.0 rtspclientsink" << std::endl;
-        return -1;
-    }
-
-    std::cout << "RTSP 推流已启动 → " << rtsp_url << " (8Mbps)" << std::endl;
-
-    // ====================== FPS 计算 ======================
-    auto last_time = std::chrono::high_resolution_clock::now();
-    float current_fps = 0.0f;
-    int frame_count = 0;
-    auto fps_update_time = last_time;
-
-    // ====================== 主循环 ======================
-    cv::Mat frame;
-    while (true)
-    {
-        cap >> frame;
-
-        if (frame.empty())
-        {
-            std::cerr << "读取摄像头帧失败！" << std::endl;
-            break;
-        }
-
-        auto now = std::chrono::high_resolution_clock::now();
-        frame_count++;
-        float elapsed = std::chrono::duration<float>(now - fps_update_time).count();
-        if (elapsed >= 1.0f)
-        {
-            current_fps = frame_count / elapsed;
-            frame_count = 0;
-            fps_update_time = now;
-        }
-
-        std::string fps_text = "FPS: " + std::to_string(int(current_fps));
-        cv::putText(frame, fps_text, cv::Point(frame.cols - 130, 40),
-                    cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(0, 255, 0), 2);
-
-        writer << frame;                 // 送入硬件编码 + 推流
-
-    }
-
-    cap.release();
-    writer.release();
-    cv::destroyAllWindows();
-
-    std::cout << "程序已退出，推流停止。" << std::endl;
+int main() {
+    YAML::Node config = YAML::LoadFile("config.yaml");
+    
+    std::string mqtt_server = "mqtt://" + config["mqtt"]["server"].as<std::string>();
+    std::string mqtt_topic = config["mqtt"]["topic"].as<std::string>();
+    int publish_interval = config["mqtt"]["publish_interval"].as<int>();
+    
+    std::string device = config["camera"]["device"].as<std::string>();
+    int width = config["camera"]["width"].as<int>();
+    int height = config["camera"]["height"].as<int>();
+    int fps = config["camera"]["fps"].as<int>();
+    std::string rtsp_url = config["camera"]["rtsp_url"].as<std::string>();
+    
+    std::string camera_id = config["info"]["id"].as<std::string>();
+    std::string location = config["info"]["location"].as<std::string>();
+    std::string http_url = config["info"]["http_url"].as<std::string>();
+    
+    CameraStatus status;
+    status.width = width;
+    status.height = height;
+    status.camera_id = camera_id;
+    status.location = location;
+    status.http_url = http_url;
+    
+    CaptureThread capture(status, device, width, height, fps, rtsp_url);
+    capture.Start();
+    
+    PublisherThread publisher(status, mqtt_server, mqtt_topic, publish_interval,
+                             camera_id, location, http_url, width, height);
+    publisher.Start();
+    
+    std::cout << "服务已启动，按 Enter 键退出..." << std::endl;
+    std::cin.get();
+    
+    capture.Stop();
+    publisher.Stop();
+    
+    std::cout << "服务已停止" << std::endl;
     return 0;
 }

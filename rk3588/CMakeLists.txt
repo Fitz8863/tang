@@ -6,27 +6,26 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_FLAGS "-pthread")
 
-
-# install target and libraries
-set(CMAKE_SKIP_INSTALL_RPATH FALSE)
-set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
-set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
-
-
-
-# opencv
 find_package(OpenCV REQUIRED)
-set(CMAKE_INSTALL_RPATH "lib")
 
+find_package(yaml-cpp REQUIRED)
 
-message(STATUS "OpenCV libraries: ${OpenCV_LIBS}")
+find_library(MQTT_LIBRARY NAMES paho-mqtt3a paho-mqtt3c paho-mqtt3as paho-mqtt3cs PATHS /usr/local/lib)
+if(NOT MQTT_LIBRARY)
+    message(FATAL_ERROR "MQTT library not found")
+endif()
 
 add_executable(main
-        src/main.cc
-
+    src/main.cc
+    src/camera_status.cc
+    src/capture_thread.cc
+    src/publisher_thread.cc
 )
 
 target_link_libraries(main
-  ${OpenCV_LIBS}
+    ${OpenCV_LIBS}
+    ${MQTT_LIBRARY}
+    paho-mqttpp3
+    yaml-cpp
 )
 

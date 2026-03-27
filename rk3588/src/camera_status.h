@@ -12,7 +12,7 @@ struct CameraStatus {
     int height;
     std::atomic<bool> running;
     int64_t timestamp_ns;
-    std::mutex timestamp_mutex;
+    mutable std::mutex timestamp_mutex;
     
     std::string camera_id;
     std::string location;
