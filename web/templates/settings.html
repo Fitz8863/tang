@@ -77,6 +77,26 @@
         transform: translateY(-3px);
     }
 
+    .metric-box {
+        background: linear-gradient(135deg, var(--bg-warm) 0%, #fff 100%);
+        border-radius: 8px;
+        padding: 10px 5px;
+        text-align: center;
+        border: 1px solid var(--border);
+    }
+
+    .metric-box .metric-label {
+        font-size: 0.7rem;
+        color: var(--text-secondary);
+        margin-bottom: 4px;
+    }
+
+    .metric-box .metric-value {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
     .x-small { font-size: 0.75rem; }
 
     .wifi-list-item {
@@ -383,62 +403,56 @@ function renderDashboard(info, isOnline, deviceDetails) {
     
     let html = '';
     if (info.cameras && info.cameras.length > 0) {
-        info.cameras.forEach(cam => {
-            const statusBadge = isOnline 
+        info.cameras.forEach((cam, index) => {
+            // 根据设备ID确定每个摄像头的在线状态
+            let camOnline = isOnline;
+            for (const [devId, devInfo] of Object.entries(deviceDetails)) {
+                if (devInfo.cameras && devInfo.cameras.some(c => c.id === cam.id)) {
+                    camOnline = true;
+                    break;
+                }
+            }
+            
+            const statusBadge = camOnline 
                 ? '<span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 x-small">ACTIVE</span>'
                 : '<span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 x-small">OFFLINE</span>';
             
-            const cardStyle = isOnline ? '' : 'filter: grayscale(0.5); opacity: 0.8;';
-            const fpsColor = isOnline ? 'text-info' : 'text-muted';
+            const cardStyle = camOnline ? '' : 'filter: grayscale(0.5); opacity: 0.8;';
+            const fpsColor = camOnline ? 'text-info' : 'text-muted';
 
             html += `
                 <div class="col-md-6 col-lg-4 mb-4" style="${cardStyle}">
                     <div class="dashboard-camera-card">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <h6 class="mb-0 fw-bold" style="color: ${isOnline ? 'var(--primary)' : '#888'};">
-                                <i class="fas fa-video me-2"></i>设备 ${cam.id}
+                                <i class="fas fa-video me-2"></i>${cam.location || '摄像头 ' + cam.id}
                             </h6>
                             ${statusBadge}
                         </div>
                         <div class="mb-3">
-                            <p class="small mb-1"><i class="fas fa-map-marker-alt me-2 text-muted"></i>${cam.location}</p>
-                            <p class="text-muted x-small text-truncate mb-0">${cam.http_url}</p>
+                            <p class="text-muted x-small mb-0">
+                                <i class="fas fa-desktop me-1"></i>${cam.http_url}
+                            </p>
                         </div>
-                        <div class="row g-2 mb-3">
-                            <div class="col-6">
-                                <div class="p-2 rounded text-center" style="background: var(--bg-warm);">
-                                    <div class="text-muted x-small">分辨率</div>
-                                    <div class="fw-bold small">${cam.resolution.width}x${cam.resolution.height}</div>
+                        <div class="row g-2">
+                            <div class="col-4">
+                                <div class="metric-box">
+                                    <div class="metric-label">分辨率</div>
+                                    <div class="metric-value">${cam.resolution.width}x${cam.resolution.height}</div>
                                 </div>
                             </div>
-                            <div class="col-6">
-                                <div class="p-2 rounded text-center" style="background: var(--bg-warm);">
-                                    <div class="text-muted x-small">FPS</div>
-                                    <div class="fw-bold small ${fpsColor}">${cam.resolution.fps} FPS</div>
+                            <div class="col-4">
+                                <div class="metric-box">
+                                    <div class="metric-label">帧率</div>
+                                    <div class="metric-value ${fpsColor}">${cam.resolution.fps.toFixed(2)} <small>FPS</small></div>
                                 </div>
                             </div>
-                        </div>
-                        <div class="mb-3">
-                            <div class="d-flex justify-content-between x-small mb-1">
-                                <span class="text-muted">置信度阈值</span>
-                                <span class="fw-bold">${cam.confidence_threshold}</span>
+                            <div class="col-4">
+                                <div class="metric-box">
+                                    <div class="metric-label">状态</div>
+                                    <div class="metric-value ${isOnline ? 'text-success' : 'text-muted'}">${isOnline ? '在线' : '离线'}</div>
+                                </div>
                             </div>
-                            <div class="progress" style="height: 6px;">
-                                <div class="progress-bar ${isOnline ? 'bg-primary' : 'bg-secondary'}" role="progressbar" style="width: ${cam.confidence_threshold * 100}%"></div>
-                            </div>
-                        </div>
-                        <div class="mb-2">
-                            <div class="d-flex justify-content-between x-small mb-1">
-                                <span class="text-muted">NMS 抑制阈值</span>
-                                <span class="fw-bold">${cam.nms_threshold}</span>
-                            </div>
-                            <div class="progress" style="height: 6px;">
-                                <div class="progress-bar ${isOnline ? 'bg-info' : 'bg-secondary'}" role="progressbar" style="width: ${cam.nms_threshold * 100}%"></div>
-                            </div>
-                        </div>
-                        <div class="mt-3 pt-2 border-top d-flex justify-content-between align-items-center">
-                            <span class="text-muted x-small">判定时长</span>
-                            <span class="badge bg-secondary bg-opacity-25 x-small">${cam.duration || 5} 秒</span>
                         </div>
                     </div>
                 </div>
