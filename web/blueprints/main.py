@@ -7,8 +7,6 @@ main_bp = Blueprint('main', __name__)
 
 @main_bp.route('/')
 def index():
-    if current_user.is_authenticated and not current_user.is_admin:
-        return render_template('user_index.html')
     return render_template('index.html')
 
 @main_bp.route('/monitor')

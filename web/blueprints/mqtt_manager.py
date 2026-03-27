@@ -40,20 +40,36 @@ class MQTTManager:
             self.connected = True
             print("MQTT连接成功")
             # 订阅设备信息主题
-            client.subscribe("jetson/info")
+            client.subscribe("RK3588/info")
         else:
             self.connected = False
             print(f"MQTT连接失败, 返回码: {rc}")
 
     def _on_message(self, client, userdata, msg):
-        if msg.topic == "jetson/info":
+        if msg.topic == "RK3588/info":
             try:
                 payload = json.loads(msg.payload.decode('utf-8'))
-                device_id = payload.get('device', 'unknown')
+                
+                # 新格式心跳包没有 device 字段，使用默认设备 ID
+                device_id = payload.get('device', 'RK3588-001')
                 
                 # 移除不需要的字段
                 if 'timestamp_ns' in payload:
                     del payload['timestamp_ns']
+                
+                # 处理 cameras 数组，确保每个 camera 包含必要字段
+                if 'cameras' in payload:
+                    for cam in payload['cameras']:
+                        # 添加默认字段
+                        if 'id' not in cam:
+                            cam['id'] = 'unknown'
+                        if 'location' not in cam:
+                            cam['location'] = '未知位置'
+                        if 'http_url' not in cam:
+                            cam['http_url'] = ''
+                        # resolution 可能不存在，提供默认值
+                        if 'resolution' not in cam:
+                            cam['resolution'] = {'width': 0, 'height': 0, 'fps': 0}
                 
                 # 保存到设备字典（支持多设备）
                 self.devices[device_id] = {
@@ -66,7 +82,7 @@ class MQTTManager:
                 self.last_info_time = time.time()
                 self.connected = True # 收到消息说明连接肯定正常
             except Exception as e:
-                print(f"解析 jetson/info 消息失败: {e}")
+                print(f"解析 RK3588/info 消息失败: {e}")
             
     def _on_disconnect(self, client, userdata, rc):
         self.connected = False

@@ -1,4 +1,6 @@
 import functools
+import os
+import json
 from flask import Blueprint, render_template, redirect, url_for, request, flash, current_app, abort
 from flask_login import login_user, login_required, logout_user, current_user
 from flask_bcrypt import Bcrypt
@@ -6,6 +8,18 @@ from .models import User
 from . import db
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/')
+
+SYSTEM_CONFIG_FILE = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'system_config.json')
+
+def is_registration_allowed():
+    if os.path.exists(SYSTEM_CONFIG_FILE):
+        try:
+            with open(SYSTEM_CONFIG_FILE, 'r', encoding='utf-8') as f:
+                config = json.load(f)
+                return config.get('allow_registration', True)
+        except:
+            pass
+    return True
 
 def admin_required(f):
     @functools.wraps(f)
@@ -27,6 +41,11 @@ def super_admin_required(f):
 def register():
     if current_user.is_authenticated:
         return redirect(url_for('main.index'))
+    
+    if not is_registration_allowed():
+        flash('系统暂不支持注册，请联系管理员', 'warning')
+        return redirect(url_for('auth.login'))
+    
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
