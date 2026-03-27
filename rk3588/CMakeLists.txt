@@ -20,6 +20,7 @@ add_executable(main
     src/camera_status.cc
     src/capture_thread.cc
     src/publisher_thread.cc
+    src/camera_manager.cc
 )
 
 target_link_libraries(main

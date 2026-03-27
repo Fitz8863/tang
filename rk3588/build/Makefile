@@ -129,6 +129,78 @@ main/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/build
 .PHONY : main/fast
 
+src/camera_manager.o: src/camera_manager.cc.o
+.PHONY : src/camera_manager.o
+
+# target to build an object file
+src/camera_manager.cc.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/camera_manager.cc.o
+.PHONY : src/camera_manager.cc.o
+
+src/camera_manager.i: src/camera_manager.cc.i
+.PHONY : src/camera_manager.i
+
+# target to preprocess a source file
+src/camera_manager.cc.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/camera_manager.cc.i
+.PHONY : src/camera_manager.cc.i
+
+src/camera_manager.s: src/camera_manager.cc.s
+.PHONY : src/camera_manager.s
+
+# target to generate assembly for a file
+src/camera_manager.cc.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/camera_manager.cc.s
+.PHONY : src/camera_manager.cc.s
+
+src/camera_status.o: src/camera_status.cc.o
+.PHONY : src/camera_status.o
+
+# target to build an object file
+src/camera_status.cc.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/camera_status.cc.o
+.PHONY : src/camera_status.cc.o
+
+src/camera_status.i: src/camera_status.cc.i
+.PHONY : src/camera_status.i
+
+# target to preprocess a source file
+src/camera_status.cc.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/camera_status.cc.i
+.PHONY : src/camera_status.cc.i
+
+src/camera_status.s: src/camera_status.cc.s
+.PHONY : src/camera_status.s
+
+# target to generate assembly for a file
+src/camera_status.cc.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/camera_status.cc.s
+.PHONY : src/camera_status.cc.s
+
+src/capture_thread.o: src/capture_thread.cc.o
+.PHONY : src/capture_thread.o
+
+# target to build an object file
+src/capture_thread.cc.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/capture_thread.cc.o
+.PHONY : src/capture_thread.cc.o
+
+src/capture_thread.i: src/capture_thread.cc.i
+.PHONY : src/capture_thread.i
+
+# target to preprocess a source file
+src/capture_thread.cc.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/capture_thread.cc.i
+.PHONY : src/capture_thread.cc.i
+
+src/capture_thread.s: src/capture_thread.cc.s
+.PHONY : src/capture_thread.s
+
+# target to generate assembly for a file
+src/capture_thread.cc.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/capture_thread.cc.s
+.PHONY : src/capture_thread.cc.s
+
 src/main.o: src/main.cc.o
 .PHONY : src/main.o
 
@@ -153,6 +225,30 @@ src/main.cc.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/main.cc.s
 .PHONY : src/main.cc.s
 
+src/publisher_thread.o: src/publisher_thread.cc.o
+.PHONY : src/publisher_thread.o
+
+# target to build an object file
+src/publisher_thread.cc.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/publisher_thread.cc.o
+.PHONY : src/publisher_thread.cc.o
+
+src/publisher_thread.i: src/publisher_thread.cc.i
+.PHONY : src/publisher_thread.i
+
+# target to preprocess a source file
+src/publisher_thread.cc.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/publisher_thread.cc.i
+.PHONY : src/publisher_thread.cc.i
+
+src/publisher_thread.s: src/publisher_thread.cc.s
+.PHONY : src/publisher_thread.s
+
+# target to generate assembly for a file
+src/publisher_thread.cc.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/publisher_thread.cc.s
+.PHONY : src/publisher_thread.cc.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -162,9 +258,21 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... main"
+	@echo "... src/camera_manager.o"
+	@echo "... src/camera_manager.i"
+	@echo "... src/camera_manager.s"
+	@echo "... src/camera_status.o"
+	@echo "... src/camera_status.i"
+	@echo "... src/camera_status.s"
+	@echo "... src/capture_thread.o"
+	@echo "... src/capture_thread.i"
+	@echo "... src/capture_thread.s"
 	@echo "... src/main.o"
 	@echo "... src/main.i"
 	@echo "... src/main.s"
+	@echo "... src/publisher_thread.o"
+	@echo "... src/publisher_thread.i"
+	@echo "... src/publisher_thread.s"
 .PHONY : help
 
 

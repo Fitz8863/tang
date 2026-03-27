@@ -83,14 +83,78 @@ CMakeFiles/main.dir/src/main.cc.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/main.dir/src/main.cc.s"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/orangepi/projects/tang/rk3588/src/main.cc -o CMakeFiles/main.dir/src/main.cc.s
 
+CMakeFiles/main.dir/src/camera_status.cc.o: CMakeFiles/main.dir/flags.make
+CMakeFiles/main.dir/src/camera_status.cc.o: ../src/camera_status.cc
+CMakeFiles/main.dir/src/camera_status.cc.o: CMakeFiles/main.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/orangepi/projects/tang/rk3588/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/main.dir/src/camera_status.cc.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/main.dir/src/camera_status.cc.o -MF CMakeFiles/main.dir/src/camera_status.cc.o.d -o CMakeFiles/main.dir/src/camera_status.cc.o -c /home/orangepi/projects/tang/rk3588/src/camera_status.cc
+
+CMakeFiles/main.dir/src/camera_status.cc.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/main.dir/src/camera_status.cc.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/orangepi/projects/tang/rk3588/src/camera_status.cc > CMakeFiles/main.dir/src/camera_status.cc.i
+
+CMakeFiles/main.dir/src/camera_status.cc.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/main.dir/src/camera_status.cc.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/orangepi/projects/tang/rk3588/src/camera_status.cc -o CMakeFiles/main.dir/src/camera_status.cc.s
+
+CMakeFiles/main.dir/src/capture_thread.cc.o: CMakeFiles/main.dir/flags.make
+CMakeFiles/main.dir/src/capture_thread.cc.o: ../src/capture_thread.cc
+CMakeFiles/main.dir/src/capture_thread.cc.o: CMakeFiles/main.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/orangepi/projects/tang/rk3588/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object CMakeFiles/main.dir/src/capture_thread.cc.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/main.dir/src/capture_thread.cc.o -MF CMakeFiles/main.dir/src/capture_thread.cc.o.d -o CMakeFiles/main.dir/src/capture_thread.cc.o -c /home/orangepi/projects/tang/rk3588/src/capture_thread.cc
+
+CMakeFiles/main.dir/src/capture_thread.cc.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/main.dir/src/capture_thread.cc.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/orangepi/projects/tang/rk3588/src/capture_thread.cc > CMakeFiles/main.dir/src/capture_thread.cc.i
+
+CMakeFiles/main.dir/src/capture_thread.cc.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/main.dir/src/capture_thread.cc.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/orangepi/projects/tang/rk3588/src/capture_thread.cc -o CMakeFiles/main.dir/src/capture_thread.cc.s
+
+CMakeFiles/main.dir/src/publisher_thread.cc.o: CMakeFiles/main.dir/flags.make
+CMakeFiles/main.dir/src/publisher_thread.cc.o: ../src/publisher_thread.cc
+CMakeFiles/main.dir/src/publisher_thread.cc.o: CMakeFiles/main.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/orangepi/projects/tang/rk3588/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object CMakeFiles/main.dir/src/publisher_thread.cc.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/main.dir/src/publisher_thread.cc.o -MF CMakeFiles/main.dir/src/publisher_thread.cc.o.d -o CMakeFiles/main.dir/src/publisher_thread.cc.o -c /home/orangepi/projects/tang/rk3588/src/publisher_thread.cc
+
+CMakeFiles/main.dir/src/publisher_thread.cc.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/main.dir/src/publisher_thread.cc.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/orangepi/projects/tang/rk3588/src/publisher_thread.cc > CMakeFiles/main.dir/src/publisher_thread.cc.i
+
+CMakeFiles/main.dir/src/publisher_thread.cc.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/main.dir/src/publisher_thread.cc.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/orangepi/projects/tang/rk3588/src/publisher_thread.cc -o CMakeFiles/main.dir/src/publisher_thread.cc.s
+
+CMakeFiles/main.dir/src/camera_manager.cc.o: CMakeFiles/main.dir/flags.make
+CMakeFiles/main.dir/src/camera_manager.cc.o: ../src/camera_manager.cc
+CMakeFiles/main.dir/src/camera_manager.cc.o: CMakeFiles/main.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/orangepi/projects/tang/rk3588/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building CXX object CMakeFiles/main.dir/src/camera_manager.cc.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/main.dir/src/camera_manager.cc.o -MF CMakeFiles/main.dir/src/camera_manager.cc.o.d -o CMakeFiles/main.dir/src/camera_manager.cc.o -c /home/orangepi/projects/tang/rk3588/src/camera_manager.cc
+
+CMakeFiles/main.dir/src/camera_manager.cc.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/main.dir/src/camera_manager.cc.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/orangepi/projects/tang/rk3588/src/camera_manager.cc > CMakeFiles/main.dir/src/camera_manager.cc.i
+
+CMakeFiles/main.dir/src/camera_manager.cc.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/main.dir/src/camera_manager.cc.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/orangepi/projects/tang/rk3588/src/camera_manager.cc -o CMakeFiles/main.dir/src/camera_manager.cc.s
+
 # Object files for target main
 main_OBJECTS = \
-"CMakeFiles/main.dir/src/main.cc.o"
+"CMakeFiles/main.dir/src/main.cc.o" \
+"CMakeFiles/main.dir/src/camera_status.cc.o" \
+"CMakeFiles/main.dir/src/capture_thread.cc.o" \
+"CMakeFiles/main.dir/src/publisher_thread.cc.o" \
+"CMakeFiles/main.dir/src/camera_manager.cc.o"
 
 # External object files for target main
 main_EXTERNAL_OBJECTS =
 
 main: CMakeFiles/main.dir/src/main.cc.o
+main: CMakeFiles/main.dir/src/camera_status.cc.o
+main: CMakeFiles/main.dir/src/capture_thread.cc.o
+main: CMakeFiles/main.dir/src/publisher_thread.cc.o
+main: CMakeFiles/main.dir/src/camera_manager.cc.o
 main: CMakeFiles/main.dir/build.make
 main: /usr/lib/aarch64-linux-gnu/libopencv_stitching.so.4.5.4d
 main: /usr/lib/aarch64-linux-gnu/libopencv_alphamat.so.4.5.4d
@@ -127,6 +191,8 @@ main: /usr/lib/aarch64-linux-gnu/libopencv_viz.so.4.5.4d
 main: /usr/lib/aarch64-linux-gnu/libopencv_wechat_qrcode.so.4.5.4d
 main: /usr/lib/aarch64-linux-gnu/libopencv_xobjdetect.so.4.5.4d
 main: /usr/lib/aarch64-linux-gnu/libopencv_xphoto.so.4.5.4d
+main: /usr/local/lib/libpaho-mqtt3a.so
+main: /usr/lib/aarch64-linux-gnu/libyaml-cpp.so.0.7.0
 main: /usr/lib/aarch64-linux-gnu/libopencv_highgui.so.4.5.4d
 main: /usr/lib/aarch64-linux-gnu/libopencv_datasets.so.4.5.4d
 main: /usr/lib/aarch64-linux-gnu/libopencv_plot.so.4.5.4d
@@ -147,7 +213,7 @@ main: /usr/lib/aarch64-linux-gnu/libopencv_photo.so.4.5.4d
 main: /usr/lib/aarch64-linux-gnu/libopencv_imgproc.so.4.5.4d
 main: /usr/lib/aarch64-linux-gnu/libopencv_core.so.4.5.4d
 main: CMakeFiles/main.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/orangepi/projects/tang/rk3588/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Linking CXX executable main"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/orangepi/projects/tang/rk3588/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Linking CXX executable main"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/main.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.

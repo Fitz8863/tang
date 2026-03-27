@@ -1,6 +1,7 @@
 #include <iostream>
 #include <memory>
-#include "camera_status.h"
+#include <vector>
+#include "camera_manager.h"
 #include "capture_thread.h"
 #include "publisher_thread.h"
 #include <yaml-cpp/yaml.h>
@@ -12,36 +13,35 @@ int main() {
     std::string mqtt_topic = config["mqtt"]["topic"].as<std::string>();
     int publish_interval = config["mqtt"]["publish_interval"].as<int>();
     
-    std::string device = config["camera"]["device"].as<std::string>();
-    int width = config["camera"]["width"].as<int>();
-    int height = config["camera"]["height"].as<int>();
-    int fps = config["camera"]["fps"].as<int>();
-    std::string rtsp_url = config["camera"]["rtsp_url"].as<std::string>();
+    CameraManager camera_manager;
     
-    std::string camera_id = config["info"]["id"].as<std::string>();
-    std::string location = config["info"]["location"].as<std::string>();
-    std::string http_url = config["info"]["http_url"].as<std::string>();
+    const auto& cameras = config["camera"];
+    for (std::size_t i = 0; i < cameras.size(); ++i) {
+        const auto& cam = cameras[i];
+        
+        std::string camera_id = cam["id"].as<std::string>();
+        std::string location = cam["location"].as<std::string>();
+        std::string http_url = cam["http_url"].as<std::string>();
+        std::string rtsp_url = cam["rtsp_url"].as<std::string>();
+        std::string device = cam["device"].as<std::string>();
+        int width = cam["width"].as<int>();
+        int height = cam["height"].as<int>();
+        int fps = cam["fps"].as<int>();
+        
+        camera_manager.AddCamera(camera_id, location, http_url, device, width, height, fps, rtsp_url);
+        std::cout << "已启动摄像头: " << camera_id << " (" << location << ")" << std::endl;
+    }
     
-    CameraStatus status;
-    status.width = width;
-    status.height = height;
-    status.camera_id = camera_id;
-    status.location = location;
-    status.http_url = http_url;
-    
-    CaptureThread capture(status, device, width, height, fps, rtsp_url);
-    capture.Start();
-    
-    PublisherThread publisher(status, mqtt_server, mqtt_topic, publish_interval,
-                             camera_id, location, http_url, width, height);
+    auto statuses = camera_manager.GetAllStatuses();
+    PublisherThread publisher(statuses, mqtt_server, mqtt_topic, publish_interval);
     publisher.Start();
     
-    std::cout << "服务已启动，按 Enter 键退出..." << std::endl;
+    std::cout << "所有服务已启动，按 Enter 键退出..." << std::endl;
     std::cin.get();
     
-    capture.Stop();
+    camera_manager.StopAll();
     publisher.Stop();
     
-    std::cout << "服务已停止" << std::endl;
+    std::cout << "所有服务已停止" << std::endl;
     return 0;
 }

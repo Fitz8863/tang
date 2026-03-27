@@ -102,7 +102,7 @@ void CaptureThread::Run() {
         std::string fps_text = "FPS: " + std::to_string(int(current_fps));
         cv::putText(frame, fps_text, cv::Point(frame.cols - 130, 40),
                     cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(0, 255, 0), 2);
-        
+                            
         writer << frame;
     }
     

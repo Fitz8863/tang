@@ -5,13 +5,10 @@
 #include <sstream>
 #include <iomanip>
 
-PublisherThread::PublisherThread(CameraStatus& status, const std::string& server,
-                                 const std::string& topic, int interval,
-                                 const std::string& camera_id, const std::string& location,
-                                 const std::string& http_url, int width, int height)
-    : status_(status), server_(server), topic_(topic), interval_(interval),
-      camera_id_(camera_id), location_(location), http_url_(http_url),
-      width_(width), height_(height), running_(false), connected_(false) {}
+PublisherThread::PublisherThread(const std::vector<std::reference_wrapper<CameraStatus>>& statuses,
+                                 const std::string& server, const std::string& topic, int interval)
+    : statuses_(statuses), server_(server), topic_(topic), interval_(interval),
+      running_(false), connected_(false) {}
 
 PublisherThread::~PublisherThread() {
     Stop();
@@ -44,26 +41,39 @@ bool PublisherThread::IsConnected() const {
     return connected_;
 }
 
+void PublisherThread::UpdateStatuses(const std::vector<std::reference_wrapper<CameraStatus>>& statuses) {
+    std::lock_guard<std::mutex> lock(statuses_mutex_);
+    statuses_ = statuses;
+}
+
 std::string PublisherThread::BuildJsonMessage() {
+    std::lock_guard<std::mutex> lock(statuses_mutex_);
+    
     std::ostringstream oss;
     oss << std::fixed << std::setprecision(4);
     
-    float fps = status_.GetFps();
-    int64_t timestamp = status_.GetTimestamp();
+    int64_t timestamp = 0;
+    if (!statuses_.empty()) {
+        timestamp = statuses_[0].get().GetTimestamp();
+    }
     
-    oss << "{"
-        << "\"timestamp_ns\":" << timestamp << ","
-        << "\"cameras\":[{"
-        << "\"id\":\"" << camera_id_ << "\","
-        << "\"location\":\"" << location_ << "\","
-        << "\"http_url\":\"" << http_url_ << "\","
-        << "\"resolution\":{"
-        << "\"width\":" << width_ << ","
-        << "\"height\":" << height_ << ","
-        << "\"fps\":" << fps << "}"
-        << "}]"
-        << "}";
+    oss << "{\"timestamp_ns\":" << timestamp << ",\"cameras\":[";
     
+    for (size_t i = 0; i < statuses_.size(); ++i) {
+        const auto& status = statuses_[i].get();
+        if (i > 0) oss << ",";
+        oss << "{"
+            << "\"id\":\"" << status.camera_id << "\","
+            << "\"location\":\"" << status.location << "\","
+            << "\"http_url\":\"" << status.http_url << "\","
+            << "\"resolution\":{"
+            << "\"width\":" << status.width << ","
+            << "\"height\":" << status.height << ","
+            << "\"fps\":" << status.GetFps() << "}"
+            << "}";
+    }
+    
+    oss << "]}";
     return oss.str();
 }
 
@@ -86,8 +96,7 @@ void PublisherThread::Run() {
             auto msg = mqtt::make_message(topic_, payload, 1, false);
             client_->publish(msg)->wait();
             
-            std::cout << "已发送状态信息 - FPS: " << std::fixed << std::setprecision(2) 
-                      << status_.GetFps() << std::endl;
+            std::cout << "已发送状态信息 - 摄像头数: " << statuses_.size() << std::endl;
             
             auto elapsed = std::chrono::steady_clock::now() - start;
             auto sleep_time = std::chrono::seconds(interval_) - elapsed;
