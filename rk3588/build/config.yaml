@@ -8,6 +8,8 @@ camera:
     location: "校园大门"
     rtsp_url: "rtsp://fnas:8889/rk3588"
     http_url: "http://fnas:8889/rk3588"
+    voice_rtsp_url: "rtsp://fnas:8889/rk3588/voice"
+    voice_http_url: "http://fnas:8889/rk3588/voice"
     device: "/dev/video0"
     width: 1920
     height: 1080
@@ -16,7 +18,8 @@ camera:
   # - id: "002"
   #   location: "校园后门"
   #   rtsp_url: "rtsp://fnas:8889/rk35882"
-  #   http_url: "http://fnas:8889/rk35882"
+    # voice_rtsp_url: "rtsp://fnas:8889/rk35882/voice"
+    # voice_http_url: "http://fnas:8889/rk35882/voice"
   #   device: "/dev/video2"
   #   width: 1920
   #   height: 1080

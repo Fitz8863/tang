@@ -66,6 +66,10 @@ std::string PublisherThread::BuildJsonMessage() {
             << "\"id\":\"" << status.camera_id << "\","
             << "\"location\":\"" << status.location << "\","
             << "\"http_url\":\"" << status.http_url << "\","
+            << "\"rtsp_url\":\"" << status.rtsp_url << "\","
+            << "\"voice_rtsp_url\":\"" << status.voice_rtsp_url << "\","
+            << "\"voice_http_url\":\"" << status.voice_http_url << "\","
+            << "\"voice_running\":" << (status.voice_running.load() ? "true" : "false") << ","
             << "\"resolution\":{"
             << "\"width\":" << status.width << ","
             << "\"height\":" << status.height << ","
@@ -96,7 +100,7 @@ void PublisherThread::Run() {
             auto msg = mqtt::make_message(topic_, payload, 1, false);
             client_->publish(msg)->wait();
             
-            std::cout << "已发送状态信息 - 摄像头数: " << statuses_.size() << std::endl;
+            std::cout << "已发送状态信息 - 当前的摄像头数: " << statuses_.size() << std::endl;
             
             auto elapsed = std::chrono::steady_clock::now() - start;
             auto sleep_time = std::chrono::seconds(interval_) - elapsed;

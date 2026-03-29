@@ -11,14 +11,18 @@ struct CameraStatus {
     int width;
     int height;
     std::atomic<bool> running;
+    std::atomic<bool> voice_running;
     int64_t timestamp_ns;
     mutable std::mutex timestamp_mutex;
     
     std::string camera_id;
     std::string location;
     std::string http_url;
+    std::string rtsp_url;
+    std::string voice_rtsp_url;
+    std::string voice_http_url;
     
-    CameraStatus() : fps(0.0f), width(1920), height(1080), running(true), timestamp_ns(0) {}
+    CameraStatus() : fps(0.0f), width(1920), height(1080), running(true), voice_running(false), timestamp_ns(0) {}
     
     void UpdateFps(float new_fps) {
         fps.store(new_fps);
