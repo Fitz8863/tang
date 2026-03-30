@@ -249,6 +249,30 @@ src/publisher_thread.cc.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/publisher_thread.cc.s
 .PHONY : src/publisher_thread.cc.s
 
+src/voice_capture_thread.o: src/voice_capture_thread.cc.o
+.PHONY : src/voice_capture_thread.o
+
+# target to build an object file
+src/voice_capture_thread.cc.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/voice_capture_thread.cc.o
+.PHONY : src/voice_capture_thread.cc.o
+
+src/voice_capture_thread.i: src/voice_capture_thread.cc.i
+.PHONY : src/voice_capture_thread.i
+
+# target to preprocess a source file
+src/voice_capture_thread.cc.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/voice_capture_thread.cc.i
+.PHONY : src/voice_capture_thread.cc.i
+
+src/voice_capture_thread.s: src/voice_capture_thread.cc.s
+.PHONY : src/voice_capture_thread.s
+
+# target to generate assembly for a file
+src/voice_capture_thread.cc.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/voice_capture_thread.cc.s
+.PHONY : src/voice_capture_thread.cc.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -273,6 +297,9 @@ help:
 	@echo "... src/publisher_thread.o"
 	@echo "... src/publisher_thread.i"
 	@echo "... src/publisher_thread.s"
+	@echo "... src/voice_capture_thread.o"
+	@echo "... src/voice_capture_thread.i"
+	@echo "... src/voice_capture_thread.s"
 .PHONY : help
 
 

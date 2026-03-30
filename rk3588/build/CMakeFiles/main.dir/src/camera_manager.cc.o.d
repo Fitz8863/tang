@@ -164,4 +164,5 @@ CMakeFiles/main.dir/src/camera_manager.cc.o: \
  /usr/include/c++/11/bits/unique_lock.h \
  /home/orangepi/projects/tang/rk3588/src/capture_thread.h \
  /usr/include/c++/11/thread /usr/include/c++/11/bits/std_thread.h \
- /usr/include/c++/11/bits/this_thread_sleep.h
+ /usr/include/c++/11/bits/this_thread_sleep.h \
+ /home/orangepi/projects/tang/rk3588/src/voice_capture_thread.h

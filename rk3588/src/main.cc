@@ -7,7 +7,7 @@
 #include <yaml-cpp/yaml.h>
 
 int main() {
-    YAML::Node config = YAML::LoadFile("config.yaml");
+    YAML::Node config = YAML::LoadFile("../config.yaml");
     
     std::string mqtt_server = "mqtt://" + config["mqtt"]["server"].as<std::string>();
     std::string mqtt_topic = config["mqtt"]["topic"].as<std::string>();
@@ -23,12 +23,16 @@ int main() {
         std::string location = cam["location"].as<std::string>();
         std::string http_url = cam["http_url"].as<std::string>();
         std::string rtsp_url = cam["rtsp_url"].as<std::string>();
+        std::string voice_rtsp_url = cam["voice_rtsp_url"].as<std::string>();
+        std::string voice_http_url = cam["voice_http_url"].as<std::string>();
         std::string device = cam["device"].as<std::string>();
         int width = cam["width"].as<int>();
         int height = cam["height"].as<int>();
         int fps = cam["fps"].as<int>();
         
-        camera_manager.AddCamera(camera_id, location, http_url, device, width, height, fps, rtsp_url);
+        camera_manager.AddCamera(camera_id, location, http_url, rtsp_url, 
+                                  voice_rtsp_url, voice_http_url, device, 
+                                  width, height, fps);
         std::cout << "已启动摄像头: " << camera_id << " (" << location << ")" << std::endl;
     }
     

@@ -181,6 +181,7 @@ CMakeFiles/main.dir/src/main.cc.o: \
  /home/orangepi/projects/tang/rk3588/src/capture_thread.h \
  /usr/include/c++/11/thread /usr/include/c++/11/bits/std_thread.h \
  /usr/include/c++/11/bits/this_thread_sleep.h \
+ /home/orangepi/projects/tang/rk3588/src/voice_capture_thread.h \
  /home/orangepi/projects/tang/rk3588/src/publisher_thread.h \
  /usr/include/yaml-cpp/yaml.h /usr/include/yaml-cpp/parser.h \
  /usr/include/yaml-cpp/dll.h /usr/include/yaml-cpp/emitter.h \
