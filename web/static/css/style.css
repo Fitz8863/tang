@@ -4,24 +4,24 @@
 @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;600&display=swap');
 
 :root {
-    /* 主色调 - 珊瑚橙温暖系 */
+    /* 主色调 - 珊瑚橙温暖系 (保持不变) */
     --color-primary: #c2410c;
     --color-primary-dark: #9a3412;
     --color-primary-light: #fb923c;
     
-    /* 辅助色 - 胡桃木质感 */
+    /* 辅助色 - 胡桃木质感 (随主题变化) */
     --color-accent: #78716c;
     --color-accent-warm: #a8a29e;
     
-    /* 背景色 - 温暖的纸张感 */
-    --color-bg: #fafaf9;
-    --color-bg-warm: #fef7ed;
-    --color-bg-card: #ffffff;
+    /* 背景色 - 使用 base.html 定义的全局变量 */
+    --color-bg: var(--bg-color);
+    --color-bg-warm: var(--bg-color);
+    --color-bg-card: var(--card-bg);
     
-    /* 文字色 - 丰富层次 */
-    --color-text: #1c1917;
-    --color-text-secondary: #57534e;
-    --color-text-muted: #a8a29e;
+    /* 文字色 - 使用 base.html 定义的全局变量 */
+    --color-text: var(--text-main);
+    --color-text-secondary: var(--text-muted);
+    --color-text-muted: var(--text-muted);
     
     /* 功能色 */
     --color-success: #15803d;
@@ -29,12 +29,12 @@
     --color-warning: #d97706;
     
     /* 边框与阴影 */
-    --color-border: #e7e5e4;
-    --color-border-light: #f5f5f4;
+    --color-border: var(--border-color);
+    --color-border-light: var(--border-color);
     
     --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
-    --shadow-md: 0 4px 12px rgba(0,0,0,0.06);
-    --shadow-lg: 0 10px 30px rgba(0,0,0,0.08);
+    --shadow-md: var(--shadow-md);
+    --shadow-lg: var(--shadow-lg);
     --shadow-xl: 0 20px 50px rgba(0,0,0,0.12);
     
     /* 圆角 - 更柔和 */
@@ -72,12 +72,12 @@ body {
     font-weight: 400;
 }
 
-/* 侧边栏 - 深色胡桃木质感 */
+/* 侧边栏 - 自适应主题 */
 .sidebar {
     width: 260px;
-    background: #292524 !important;
-    border-right: none;
-    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.18);
+    background: var(--sidebar-bg) !important;
+    border-right: 1px solid var(--border-color);
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.05);
     position: sticky;
     top: 0;
     height: 100vh;
@@ -85,20 +85,20 @@ body {
 }
 
 .sidebar-brand {
-    color: #fafaf9 !important;
+    color: var(--text-main) !important;
     font-family: var(--font-display);
     font-weight: 600;
     padding: 28px 24px;
     letter-spacing: 3px;
     font-size: 0.9rem;
-    border-bottom: 1px solid rgba(255,255,255,0.06);
+    border-bottom: 1px solid var(--border-color);
 }
 
 .sidebar .nav-link {
     border-radius: 0;
     margin: 2px 16px;
     padding: 14px 20px;
-    color: #a8a29e !important;
+    color: var(--text-muted) !important;
     font-weight: 400;
     letter-spacing: 0.8px;
     transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
@@ -107,8 +107,8 @@ body {
 }
 
 .sidebar .nav-link:hover {
-    background: rgba(255, 255, 255, 0.04);
-    color: #fafaf9 !important;
+    background: rgba(251, 146, 60, 0.05);
+    color: var(--primary) !important;
     padding-left: 26px;
 }
 
@@ -425,10 +425,10 @@ main {
     }
 }
 
-/* 卡片 - 精致的白卡片 */
+/* 卡片 - 自适应主题 */
 .card {
-    background: var(--color-bg-card);
-    border: 1px solid var(--color-border-light);
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-sm);
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
@@ -438,22 +438,22 @@ main {
 .card:hover {
     transform: translateY(-3px);
     box-shadow: var(--shadow-lg);
-    border-color: var(--color-border);
+    border-color: var(--primary);
 }
 
 .card-header {
-    background: #fff;
-    border-bottom: 1px solid var(--color-border-light);
+    background: var(--card-bg);
+    border-bottom: 1px solid var(--border-color);
     padding: 20px 24px;
     font-weight: 600;
-    color: var(--color-text);
+    color: var(--text-main);
     font-family: var(--font-display);
     letter-spacing: 1.5px;
     font-size: 0.95rem;
 }
 
 .card-body {
-    color: var(--color-text);
+    color: var(--text-main);
     padding: 24px;
 }
 
@@ -508,29 +508,31 @@ main {
 
 /* 表单 */
 .form-control {
-    background: #fff;
-    border: 1px solid var(--color-border);
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
     border-radius: var(--radius-md);
     padding: 14px 20px;
     font-size: 0.95rem;
     transition: all 0.3s ease;
     font-weight: 400;
+    color: var(--text-main);
 }
 
 .form-control:focus {
-    background: #fff;
+    background: var(--card-bg);
     border-color: var(--color-primary);
     box-shadow: 0 0 0 3px rgba(194, 65, 12, 0.08);
     outline: none;
+    color: var(--text-main);
 }
 
 .form-control::placeholder {
-    color: var(--color-text-muted);
+    color: var(--text-muted);
     font-weight: 300;
 }
 
 .form-label {
-    color: var(--color-text-secondary);
+    color: var(--text-muted);
     font-weight: 500;
     margin-bottom: 10px;
     font-size: 0.88rem;
@@ -538,23 +540,24 @@ main {
 }
 
 .form-select {
-    background: #fff;
-    border: 1px solid var(--color-border);
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
     border-radius: var(--radius-md);
     padding: 14px 20px;
     font-size: 0.95rem;
+    color: var(--text-main);
 }
 
 /* 表格 */
 .table {
-    color: var(--color-text);
+    color: var(--text-main);
     font-size: 0.92rem;
 }
 
 .table thead th {
-    background: var(--color-bg-warm);
+    background: var(--bg-color);
     border-bottom: 2px solid var(--color-primary);
-    color: var(--color-text-secondary);
+    color: var(--text-muted);
     font-weight: 600;
     padding: 18px 20px;
     font-size: 0.75rem;
@@ -572,19 +575,20 @@ main {
 }
 
 .table tbody tr {
-    background: #fff;
+    background: var(--card-bg);
     transition: all 0.25s ease;
 }
 
 .table tbody tr:hover {
-    background: var(--color-bg-warm);
+    background: rgba(251, 146, 60, 0.05);
     transform: none;
 }
 
 .table td {
     padding: 18px 20px;
-    border-color: var(--color-border-light);
+    border-color: var(--border-color);
     vertical-align: middle;
+    color: var(--text-main);
 }
 
 /* 徽章 */

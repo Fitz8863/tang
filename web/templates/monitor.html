@@ -10,73 +10,100 @@
         gap: 20px;
     }
     .monitor-card {
-        background: var(--bg-card);
-        border: 1px solid var(--border);
+        background: #1c1917 !important; /* 强制深色 */
+        border: 1px solid #292524 !important;
         border-radius: var(--radius-lg);
         overflow: hidden;
-        box-shadow: var(--shadow-md);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
         transition: all 0.3s ease;
+        color: #fafaf9 !important; /* 强制白色文字 */
     }
     .monitor-card:hover {
         transform: translateY(-4px);
-        box-shadow: var(--shadow-lg);
-        border-color: var(--primary-light);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+        border-color: var(--primary-light) !important;
     }
     .monitor-header {
-        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-        color: white;
+        background: linear-gradient(135deg, #c2410c 0%, #9a3412 100%);
+        color: #fafaf9 !important;
         padding: 14px 20px;
         display: flex;
         justify-content: space-between;
         align-items: center;
     }
+    .camera-info-bar {
+        background: #0c0a09 !important; /* 极夜黑背景 */
+        color: #a8a29e !important;
+        padding: 6px 20px;
+        font-size: 0.8rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid #1c1917 !important;
+    }
+    .camera-info-bar .resolution {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-family: 'Courier New', monospace;
+        color: #fb923c !important;
+        font-weight: 500;
+    }
+    .camera-info-bar .resolution i {
+        font-size: 0.75rem;
+    }
     .monitor-body {
         padding: 0;
-        background: #000;
+        background: #000 !important;
         min-height: 350px;
         position: relative;
     }
-    .monitor-body iframe {
+    .monitor-body img {
         width: 100%;
         height: 350px;
-        border: none;
+        object-fit: contain;
+        background: #000 !important;
     }
-    .video-overlay {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.85);
+    .monitor-stats {
         display: flex;
-        flex-direction: column;
+        gap: 20px;
+        padding: 15px 20px;
+        background: #0c0a09 !important;
+        border-top: 1px solid #1c1917 !important;
+        color: #fafaf9 !important;
+    }
+    .monitor-stats span {
+        display: flex;
         align-items: center;
-        justify-content: center;
-        z-index: 10;
-        transition: all 0.5s ease;
+        gap: 5px;
+        font-size: 0.85rem;
+        color: #a8a29e !important;
     }
-    .video-overlay i {
-        font-size: 3rem;
-        margin-bottom: 15px;
-        color: var(--primary-light);
-    }
-    .video-overlay.hidden {
-        opacity: 0;
-        pointer-events: none;
-    }
-    .btn-refresh-stream {
-        background: transparent;
-        border: 1px solid var(--primary);
-        color: var(--primary);
-        padding: 5px 15px;
-        border-radius: 20px;
-        font-size: 0.8rem;
-        margin-top: 10px;
+    .empty-state {
+        text-align: center;
+        padding: 80px 20px;
+        color: var(--text-muted);
+        grid-column: 1 / -1;
+        background: var(--card-bg);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border-color);
+        box-shadow: var(--shadow-md);
         transition: all 0.3s ease;
     }
-    .btn-refresh-stream:hover {
-        background: var(--primary);
-        color: white;
+    .empty-state i {
+        font-size: 5rem;
+        margin-bottom: 20px;
+        background: linear-gradient(135deg, var(--primary), var(--primary-light));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        opacity: 0.6;
+    }
+    .empty-state h5 {
+        color: var(--text-main);
+        font-weight: 600;
+    }
+    .empty-state p {
+        color: var(--text-muted);
     }
     .status-badge {
         padding: 5px 12px;
@@ -85,53 +112,19 @@
         display: flex;
         align-items: center;
         gap: 5px;
-        background: rgba(16, 185, 129, 0.2);
-        color: #10b981;
+        background: rgba(16, 185, 129, 0.2) !important;
+        color: #10b981 !important; /* 始终保持绿色 */
     }
     .status-dot {
         width: 8px;
         height: 8px;
         border-radius: 50%;
-        background: #10b981;
+        background: #10b981 !important; /* 始终保持绿色点 */
         animation: pulse 2s infinite;
     }
     @keyframes pulse {
         0%, 100% { opacity: 1; }
         50% { opacity: 0.5; }
-    }
-    .monitor-stats {
-        display: flex;
-        gap: 20px;
-        padding: 15px 20px;
-        background: var(--bg-warm);
-        border-top: 1px solid var(--border);
-    }
-    .monitor-stats span {
-        display: flex;
-        align-items: center;
-        gap: 5px;
-        font-size: 0.85rem;
-        color: var(--text-secondary);
-    }
-    .empty-state {
-        text-align: center;
-        padding: 80px 20px;
-        color: var(--text-secondary);
-        grid-column: 1 / -1;
-        background: var(--bg-card);
-        border-radius: var(--radius-lg);
-        border: 1px solid var(--border);
-    }
-    .empty-state i {
-        font-size: 5rem;
-        margin-bottom: 20px;
-        background: linear-gradient(135deg, var(--primary), var(--accent));
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        opacity: 0.5;
-    }
-    .empty-state h5 {
-        color: var(--text-primary);
     }
     {% if not current_user.is_authenticated %}
     .alert-info {
@@ -162,9 +155,9 @@
 </div>
 {% else %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h4 class="mb-0">
+    <!-- <h4 class="mb-0">
         <i class="fas fa-video me-2" style="color: var(--primary-light);"></i>实时视频监控
-    </h4>
+    </h4> -->
 </div>
 
 <div class="monitor-grid" id="monitorGrid">
@@ -186,7 +179,27 @@
         
         syncCameras();
         pollInterval = setInterval(syncCameras, 10000);
+        updateCameraStats();
+        setInterval(updateCameraStats, 3000);
     });
+
+    function updateCameraStats() {
+        fetch('/settings/api/mqtt/camera-stats')
+            .then(res => res.json())
+            .then(data => {
+                const cameras = data.cameras || [];
+                cameras.forEach(cam => {
+                    const infoBar = document.getElementById(`info-bar-${cam.id}`);
+                    if (infoBar) {
+                        const resText = infoBar.querySelector('.resolution-text');
+                        if (resText) {
+                            resText.textContent = cam.resolution;
+                        }
+                    }
+                });
+            })
+            .catch(() => {});
+    }
 
     function syncCameras() {
         fetch('/api/cameras')
@@ -212,7 +225,7 @@
                     emptyState.style.display = 'block';
                     emptyState.querySelector('i').className = 'fas fa-server';
                     emptyStateTitle.innerText = '请先连接服务器';
-                    emptyStateDesc.innerText = '前往“系统设置”连接远程服务器以获取实时监控';
+                    // emptyStateDesc.innerText = '前往“系统设置”连接远程服务器以获取实时监控';
                     return;
                 }
 
@@ -266,22 +279,29 @@
                     <span class="status-dot"></span>activate
                 </span>
             </div>
+            <div class="camera-info-bar" id="info-bar-${id}">
+                <span class="resolution">
+                    <i class="fas fa-desktop"></i>
+                    <span class="resolution-text">等待数据...</span>
+                </span>
+            </div>
             <div class="monitor-body">
                 <div class="video-overlay" id="overlay-${id}">
                     <i class="fas fa-circle-notch fa-spin"></i>
                     <div class="x-small text-primary">正在建立安全视频链路...</div>
                 </div>
-                <iframe src="${webrtcUrl}" allowfullscreen data-url="${webrtcUrl}" onload="hideOverlay('${id}')"></iframe>
+                <img src="/settings/api/video/stream/${id}" data-camera-id="${id}" onerror="handleVideoError('${id}')"></img>
             </div>
             <div class="monitor-stats">
                 <div class="d-flex justify-content-between w-100 align-items-center">
                     <span><i class="fas fa-video"></i> 远程视频流</span>
-                    <button class="btn-refresh-stream" onclick="refreshStream('${id}')">
-                        <i class="fas fa-sync-alt me-1"></i>重新连接
-                    </button>
                 </div>
             </div>
         `;
+        
+        // MJPEG流可能不触发onload，延迟1.5秒自动隐藏加载遮罩
+        setTimeout(() => hideOverlay(id), 1500);
+        
         return card;
     }
 
@@ -291,20 +311,9 @@
             overlay.classList.add('hidden');
         }
     }
-
-    function refreshStream(id) {
-        const card = document.getElementById(`camera-card-${id}`);
-        if (!card) return;
-        
-        const overlay = document.getElementById(`overlay-${id}`);
-        const iframe = card.querySelector('iframe');
-        const url = iframe.getAttribute('data-url');
-        
-        if (overlay) overlay.classList.remove('hidden');
-        iframe.src = '';
-        setTimeout(() => {
-            iframe.src = url;
-        }, 100);
+    
+    function handleVideoError(id) {
+        console.error('视频流加载失败:', id);
     }
 
     function updateCameraCard(id, name, webrtcUrl) {
@@ -314,14 +323,6 @@
         const nameEl = card.querySelector('.camera-name');
         if (nameEl && nameEl.innerText !== name) {
             nameEl.innerHTML = `<i class="fas fa-map-marker-alt me-2"></i>${name}`;
-        }
-
-        const iframe = card.querySelector('iframe');
-        if (iframe && iframe.getAttribute('data-url') !== webrtcUrl) {
-            iframe.src = webrtcUrl;
-            iframe.setAttribute('data-url', webrtcUrl);
-            const urlLabel = card.querySelector('.camera-url-label');
-            if (urlLabel) urlLabel.innerHTML = `<i class="fas fa-link"></i> ${webrtcUrl}`;
         }
     }
 
