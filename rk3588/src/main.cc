@@ -7,7 +7,7 @@
 #include <yaml-cpp/yaml.h>
 
 int main() {
-    YAML::Node config = YAML::LoadFile("config.yaml");
+    YAML::Node config = YAML::LoadFile("../config.yaml");
     
     std::string mqtt_server = "mqtt://" + config["mqtt"]["server"].as<std::string>();
     std::string mqtt_topic = config["mqtt"]["topic"].as<std::string>();
