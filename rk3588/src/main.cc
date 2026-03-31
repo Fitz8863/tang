@@ -1,17 +1,30 @@
 #include <iostream>
 #include <memory>
 #include <vector>
+#include <csignal>
+#include <thread>
+#include "global_running.h"
 #include "camera_manager.h"
 #include "capture_thread.h"
 #include "publisher_thread.h"
 #include <yaml-cpp/yaml.h>
 
+std::atomic<bool> g_running(true);
+
+void signal_handler(int) {
+    g_running = false;
+}
+
 int main() {
+    std::signal(SIGINT, signal_handler);
+    std::signal(SIGTERM, signal_handler);
     YAML::Node config = YAML::LoadFile("../config.yaml");
     
     std::string mqtt_server = "mqtt://" + config["mqtt"]["server"].as<std::string>();
     std::string mqtt_topic = config["mqtt"]["topic"].as<std::string>();
     int publish_interval = config["mqtt"]["publish_interval"].as<int>();
+    
+    std::string device_id = config["device"]["device_id"].as<std::string>();
     
     CameraManager camera_manager;
     
@@ -37,11 +50,16 @@ int main() {
     }
     
     auto statuses = camera_manager.GetAllStatuses();
-    PublisherThread publisher(statuses, mqtt_server, mqtt_topic, publish_interval);
+    PublisherThread publisher(statuses, device_id, mqtt_server, mqtt_topic, publish_interval);
     publisher.Start();
     
-    std::cout << "所有服务已启动，按 Enter 键退出..." << std::endl;
-    std::cin.get();
+    std::cout << "所有服务已启动，按 Ctrl+C 退出..." << std::endl;
+    
+    while (g_running) {
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
+    
+    std::cout << "正在停止服务..." << std::endl;
     
     camera_manager.StopAll();
     publisher.Stop();

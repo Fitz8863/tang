@@ -1,3 +1,6 @@
+device:
+  device_id: "RK3588"
+
 mqtt:
   server: "fnas:1883"
   topic: "RK3588/info"
@@ -9,7 +12,7 @@ camera:
     rtsp_url: "rtsp://fnas:8554/rk3588"
     http_url: "http://fnas:8889/rk3588"
     voice_rtsp_url: "rtsp://fnas:8554/rk3588/voice"
-    voice_http_url: "http://fnas:8889/rk3588/voice"
+    voice_http_url: "http://fnas:8888/rk3588/voice"
     device: "/dev/video0"
     width: 1920
     height: 1080

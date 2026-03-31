@@ -1,14 +1,8 @@
 #include "voice_capture_thread.h"
+#include "global_running.h"
 #include <iostream>
 #include <chrono>
 #include <cstdio>
-#include <signal.h>
-
-static volatile bool g_ffmpeg_running = true;
-
-void signal_handler(int) {
-    g_ffmpeg_running = false;
-}
 
 VoiceCaptureThread::VoiceCaptureThread(CameraStatus& status, const std::string& rtsp_url)
     : status_(status), rtsp_url_(rtsp_url), running_(false) {}
@@ -27,7 +21,6 @@ void VoiceCaptureThread::Start() {
 void VoiceCaptureThread::Stop() {
     if (running_) {
         running_ = false;
-        g_ffmpeg_running = false;
         if (thread_.joinable()) {
             thread_.join();
         }
@@ -39,9 +32,6 @@ bool VoiceCaptureThread::IsRunning() const {
 }
 
 void VoiceCaptureThread::Run() {
-    signal(SIGINT, signal_handler);
-    signal(SIGTERM, signal_handler);
-
     std::string cmd = 
         "ffmpeg -f alsa -channels 1 -sample_rate 44100 -i hw:3,0 "
         "-c:a aac -b:a 128k "
@@ -60,7 +50,7 @@ void VoiceCaptureThread::Run() {
 
     auto last_print = std::chrono::steady_clock::now();
 
-    while (running_ && g_ffmpeg_running) {
+    while (running_ && g_running) {
         auto now = std::chrono::steady_clock::now();
         auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - last_print).count();
         if (elapsed >= 5) {
@@ -70,6 +60,8 @@ void VoiceCaptureThread::Run() {
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
     }
 
-    pclose(pipe);
+    if (pipe) {
+        pclose(pipe);
+    }
     std::cout << "音频推流线程已退出" << std::endl;
 }
