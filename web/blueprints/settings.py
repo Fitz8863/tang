@@ -27,6 +27,9 @@ def save_system_config(config):
 def before_request():
     if not current_user.is_authenticated:
         return login_manager.unauthorized()
+    # 视频流接口允许所有登录用户访问
+    if request.path.startswith('/settings/api/video/stream/'):
+        return
     if not current_user.is_admin:
         abort(403)
 
@@ -157,33 +160,6 @@ def get_mqtt_configs():
         } for c in unique_configs]
     }), 200
 
-@settings_bp.route('/api/mqtt/realtime-stats', methods=['GET'])
-def get_mqtt_realtime_stats():
-    """获取MQTT实时设备统计（在线设备数、摄像头数）"""
-    try:
-        import time
-        from blueprints.mqtt_manager import mqtt_manager
-        if not mqtt_manager:
-            return jsonify({
-                'connected': False,
-                'device_count': 0,
-                'camera_count': 0,
-                'devices': []
-            }), 200
-        
-        # 获取活跃设备数据
-        data = mqtt_manager.get_active_data()
-        
-        return jsonify({
-            'connected': mqtt_manager.connected,
-            'device_count': data.get('device_count', 0),
-            'camera_count': data.get('camera_count', 0),
-            'devices': data.get('devices', []),
-            'device_details': data.get('device_details', {})
-        }), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
 @settings_bp.route('/apijetson/info', methods=['GET'])
 def get_jetson_info():
     """获取最新的Jetson设备信息"""
@@ -206,3 +182,72 @@ def get_jetson_info():
         }), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@settings_bp.route('/api/mqtt/camera-stats', methods=['GET'])
+def get_camera_stats():
+    """获取摄像头实时状态（分辨率、帧率等）"""
+    try:
+        from blueprints.mqtt_manager import mqtt_manager
+        if not mqtt_manager or not mqtt_manager.connected:
+            return jsonify({'cameras': []}), 200
+            
+        if not mqtt_manager.latest_jetson_info:
+            return jsonify({'cameras': []}), 200
+        
+        cameras_data = mqtt_manager.latest_jetson_info.get('cameras', [])
+        cameras = []
+        for cam in cameras_data:
+            res = cam.get('resolution', {})
+            cameras.append({
+                'id': cam.get('id', ''),
+                'resolution': f"{res.get('width', 0)}x{res.get('height', 0)}@{res.get('fps', 0)}fps"
+            })
+        
+        return jsonify({'cameras': cameras}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@settings_bp.route('/api/video/stream/<camera_id>')
+def video_stream(camera_id):
+    """YOLO推理视频流接口"""
+    try:
+        from blueprints.mqtt_manager import mqtt_manager
+        from blueprints.video_inference import video_inference
+        
+        if not mqtt_manager or not mqtt_manager.connected:
+            return "MQTT未连接", 400
+            
+        if not mqtt_manager.latest_jetson_info:
+            return "等待摄像头数据...", 400
+        
+        # 优先从心跳数据中查找对应camera_id的RTSP流地址，如果没有则退而求其次使用http流
+        cameras_data = mqtt_manager.latest_jetson_info.get('cameras', [])
+        stream_url = None
+        for cam in cameras_data:
+            if str(cam.get('id', '')) == str(camera_id):
+                stream_url = cam.get('rtsp_url') or cam.get('http_url', '')
+                break
+        
+        if not stream_url:
+            return f"未找到摄像头 {camera_id} 的流地址", 404
+        
+        # 获取或创建视频捕获
+        video_inference.get_or_create_capture(camera_id, stream_url)
+        
+        def generate():
+            while True:
+                frame = video_inference.get_frame(camera_id)
+                if frame:
+                    yield (b'--frame\r\n'
+                           b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+                else:
+                    import time
+                    time.sleep(0.03)  # ~30fps
+        
+        response = make_response(generate())
+        response.headers['Content-Type'] = 'multipart/x-mixed-replace; boundary=frame'
+        return response
+        
+    except Exception as e:
+        return str(e), 500

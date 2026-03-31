@@ -2,6 +2,80 @@
 
 {% block title %}用户管理 - 校园安防智能监测系统{% endblock %}
 
+{% block extra_css %}
+<style>
+    /* 全局强制自适应主题背景和文字 */
+    .card {
+        background-color: var(--card-bg) !important;
+        border-color: var(--border-color) !important;
+        color: var(--text-main) !important;
+    }
+    
+    .table {
+        background-color: transparent !important;
+        color: var(--text-main) !important;
+        border-color: var(--border-color) !important;
+    }
+
+    /* 核心修复：强制每一行和单元格在黑夜模式下使用深色背景 */
+    .table thead th {
+        background-color: var(--bg-color) !important;
+        color: var(--text-muted) !important;
+        border-bottom: 2px solid var(--primary) !important;
+        border-top: none !important;
+        padding: 1.2rem 1rem !important;
+    }
+
+    .table tbody tr {
+        background-color: var(--card-bg) !important;
+    }
+
+    .table tbody td {
+        background-color: var(--card-bg) !important;
+        color: var(--text-main) !important;
+        border-color: var(--border-color) !important;
+        padding: 1.2rem 1rem !important;
+        vertical-align: middle;
+    }
+
+    .table-hover tbody tr:hover td {
+        background-color: rgba(251, 146, 60, 0.1) !important;
+    }
+
+    /* 修正 small 文本颜色 */
+    .table td small.text-muted {
+        color: var(--text-muted) !important;
+    }
+
+    /* 模态框适配 */
+    .modal-content {
+        background-color: var(--card-bg) !important;
+        color: var(--text-main) !important;
+        border: 1px solid var(--border-color) !important;
+    }
+
+    .modal-header, .modal-footer {
+        border-color: var(--border-color) !important;
+    }
+
+    .form-control, .form-select {
+        background-color: var(--bg-color) !important;
+        border-color: var(--border-color) !important;
+        color: var(--text-main) !important;
+    }
+
+    .form-control:focus, .form-select:focus {
+        border-color: var(--primary) !important;
+        box-shadow: 0 0 0 0.25rem rgba(251, 146, 60, 0.2) !important;
+        background-color: var(--bg-color) !important;
+    }
+
+    .btn-close {
+        filter: var(--theme-filter);
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid">
     <div class="row">

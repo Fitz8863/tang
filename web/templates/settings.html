@@ -60,43 +60,6 @@
         justify-content: space-between;
     }
 
-    .dashboard-camera-card {
-        background: var(--bg-card);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-md);
-        padding: 15px;
-        transition: var(--transition);
-        height: 100%;
-        box-shadow: var(--shadow-sm);
-    }
-
-    .dashboard-camera-card:hover {
-        background: var(--bg-card-hover);
-        border-color: var(--primary);
-        box-shadow: var(--shadow-md);
-        transform: translateY(-3px);
-    }
-
-    .metric-box {
-        background: linear-gradient(135deg, var(--bg-warm) 0%, #fff 100%);
-        border-radius: 8px;
-        padding: 10px 5px;
-        text-align: center;
-        border: 1px solid var(--border);
-    }
-
-    .metric-box .metric-label {
-        font-size: 0.7rem;
-        color: var(--text-secondary);
-        margin-bottom: 4px;
-    }
-
-    .metric-box .metric-value {
-        font-size: 0.85rem;
-        font-weight: 600;
-        color: var(--text-primary);
-    }
-
     .x-small { font-size: 0.75rem; }
 
     .wifi-list-item {
@@ -115,22 +78,29 @@
     }
 
     .form-control, .form-select {
-        background-color: #fff;
-        border: 1px solid var(--border);
-        color: var(--text-primary);
+        background-color: var(--card-bg);
+        border: 1px solid var(--border-color);
+        color: var(--text-main);
         border-radius: var(--radius-sm);
+        transition: all 0.3s ease;
     }
 
     .form-select option {
-        background-color: #fff;
-        color: var(--text-primary);
+        background-color: var(--card-bg);
+        color: var(--text-main);
     }
 
     .form-control:focus, .form-select:focus {
-        background-color: #fff;
+        background-color: var(--card-bg);
         border-color: var(--primary);
-        color: var(--text-primary);
-        box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+        color: var(--text-main);
+        box-shadow: 0 0 0 4px rgba(251, 146, 60, 0.2);
+    }
+    
+    .input-group-text {
+        background-color: var(--bg-color);
+        border: 1px solid var(--border-color);
+        color: var(--text-muted);
     }
 
     .progress {
@@ -170,6 +140,33 @@
 </div>
 
 <div class="row">
+    <!-- 界面主题设置 -->
+    <div class="col-12 mb-4">
+        <div class="d-flex align-items-center mb-3">
+            <i class="fas fa-palette me-2" style="color: var(--primary);"></i>
+            <h5 class="mb-0 fw-bold">界面显示设置</h5>
+        </div>
+        
+        <div class="card border-0 rounded-4" style="background: var(--card-bg); box-shadow: var(--shadow-md);">
+            <div class="card-body p-4">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <h6 class="fw-bold mb-1">系统主题模式</h6>
+                        <p class="text-muted small mb-0">切换白天或黑夜主题模式</p>
+                    </div>
+                    <div class="btn-group" role="group" aria-label="Theme toggle">
+                        <button type="button" class="btn btn-outline-primary px-3" id="btnThemeLight" onclick="setTheme('light')">
+                            <i class="fas fa-sun me-1"></i>白天
+                        </button>
+                        <button type="button" class="btn btn-outline-primary px-3" id="btnThemeDark" onclick="setTheme('dark')">
+                            <i class="fas fa-moon me-1"></i>黑夜
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- 系统安全设置 -->
     <div class="col-12 mb-4">
         <div class="d-flex align-items-center mb-3">
@@ -209,7 +206,7 @@
                                 <span class="input-group-text bg-transparent border-end-0">
                                     <i class="fas fa-network-wired text-muted"></i>
                                 </span>
-                                <input type="text" class="form-control border-start-0" id="mqttBroker" placeholder="例如: fnas">
+                                <input type="text" class="form-control border-start-0" id="mqttBroker" placeholder="例如: 10.60.1.5">
                             </div>
                         </div>
                         <div class="col-md-2">
@@ -262,27 +259,12 @@
     </div>
 </div>
 
-<!-- 实时仪表盘部分 -->
-<div id="dashboardSection" class="mt-5 d-none">
-    <div class="section-title">
-        <i class="fas fa-tachometer-alt"></i>
-        <h4 class="mb-0">边缘设备实时仪表盘</h4>
-        <span class="ms-3 badge rounded-pill bg-success shadow-sm" style="font-size: 0.6rem; animation: pulse-green 2s infinite;">LIVE DATA</span>
-    </div>
-    
-    <div class="row" id="dashboardContainer">
-        <!-- 摄像头卡片动态插入 -->
-    </div>
-</div>
-
 {% endif %}
 
 {% block extra_js %}
 <script>
 let settingsLoaded = false;
 let isMqttConnected = false;
-let dashboardInterval = null;
-let lastDeviceDetailsJson = '';
 
 document.addEventListener('DOMContentLoaded', function() {
     if (settingsLoaded) return;
@@ -291,11 +273,36 @@ document.addEventListener('DOMContentLoaded', function() {
     loadSystemConfig();
     checkConnectionStatus();
     loadHistoryList();
+    initThemeButtons();
     
     document.getElementById('allowRegistrationSwitch').addEventListener('change', function() {
         saveSystemConfig();
     });
 });
+
+function initThemeButtons() {
+    const currentTheme = localStorage.getItem('theme') || 'dark';
+    updateThemeButtons(currentTheme);
+}
+
+function setTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+    updateThemeButtons(theme);
+}
+
+function updateThemeButtons(theme) {
+    const btnLight = document.getElementById('btnThemeLight');
+    const btnDark = document.getElementById('btnThemeDark');
+    
+    if (theme === 'light') {
+        btnLight.classList.add('active');
+        btnDark.classList.remove('active');
+    } else {
+        btnLight.classList.remove('active');
+        btnDark.classList.add('active');
+    }
+}
 
 function loadSystemConfig() {
     fetch('/settings/api/system/config')
@@ -352,141 +359,11 @@ function updateUI(connected, broker, port) {
         statusBadge.className = 'badge bg-success rounded-pill px-3 py-2';
         statusText.textContent = '已连接';
         brokerText.textContent = `在线: ${broker}:${port}`;
-        
-        startDashboardPolling();
     } else {
         statusBadge.className = 'badge bg-secondary rounded-pill px-3 py-2';
         statusText.textContent = '未连接';
         brokerText.textContent = '等待连接...';
-        
-        stopDashboardPolling();
-        document.getElementById('dashboardSection').classList.add('d-none');
     }
-}
-
-function startDashboardPolling() {
-    if (dashboardInterval) return;
-    fetchDashboardData();
-    dashboardInterval = setInterval(fetchDashboardData, 2000);
-}
-
-function stopDashboardPolling() {
-    if (dashboardInterval) {
-        clearInterval(dashboardInterval);
-        dashboardInterval = null;
-    }
-}
-
-function fetchDashboardData() {
-    if (!isMqttConnected) return;
-    
-    fetch('/settings/api/mqtt/realtime-stats')
-        .then(res => res.json())
-        .then(data => {
-            if (data.device_details) {
-                const allCameras = [];
-                Object.values(data.device_details).forEach(device => {
-                    if (device.cameras) {
-                        allCameras.push(...device.cameras);
-                    }
-                });
-                renderDashboard({ cameras: allCameras }, data.connected, data.device_details);
-            }
-        })
-        .catch(err => console.error("数据拉取失败:", err));
-}
-
-function renderDashboard(info, isOnline, deviceDetails) {
-    const container = document.getElementById('dashboardContainer');
-    const dashboardSection = document.getElementById('dashboardSection');
-    dashboardSection.classList.remove('d-none');
-    
-    let html = '';
-    if (info.cameras && info.cameras.length > 0) {
-        info.cameras.forEach((cam, index) => {
-            // 根据设备ID确定每个摄像头的在线状态
-            let camOnline = isOnline;
-            for (const [devId, devInfo] of Object.entries(deviceDetails)) {
-                if (devInfo.cameras && devInfo.cameras.some(c => c.id === cam.id)) {
-                    camOnline = true;
-                    break;
-                }
-            }
-            
-            const statusBadge = camOnline 
-                ? '<span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 x-small">ACTIVE</span>'
-                : '<span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 x-small">OFFLINE</span>';
-            
-            const cardStyle = camOnline ? '' : 'filter: grayscale(0.5); opacity: 0.8;';
-            const fpsColor = camOnline ? 'text-info' : 'text-muted';
-
-            html += `
-                <div class="col-md-6 col-lg-4 mb-4" style="${cardStyle}">
-                    <div class="dashboard-camera-card">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h6 class="mb-0 fw-bold" style="color: ${isOnline ? 'var(--primary)' : '#888'};">
-                                <i class="fas fa-video me-2"></i>${cam.location || '摄像头 ' + cam.id}
-                            </h6>
-                            ${statusBadge}
-                        </div>
-                        <div class="mb-3">
-                            <p class="text-muted x-small mb-0">
-                                <i class="fas fa-desktop me-1"></i>${cam.http_url}
-                            </p>
-                        </div>
-                        <div class="row g-2">
-                            <div class="col-4">
-                                <div class="metric-box">
-                                    <div class="metric-label">分辨率</div>
-                                    <div class="metric-value">${cam.resolution.width}x${cam.resolution.height}</div>
-                                </div>
-                            </div>
-                            <div class="col-4">
-                                <div class="metric-box">
-                                    <div class="metric-label">帧率</div>
-                                    <div class="metric-value ${fpsColor}">${cam.resolution.fps.toFixed(2)} <small>FPS</small></div>
-                                </div>
-                            </div>
-                            <div class="col-4">
-                                <div class="metric-box">
-                                    <div class="metric-label">状态</div>
-                                    <div class="metric-value ${isOnline ? 'text-success' : 'text-muted'}">${isOnline ? '在线' : '离线'}</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        });
-    } else {
-        html = '<div class="col-12 text-center text-muted py-5"><i class="fas fa-sync fa-spin me-2"></i>等待设备上报数据...</div>';
-    }
-    container.innerHTML = html;
-    
-    updateDeviceCameraDropdowns(deviceDetails, isOnline);
-}
-
-function updateDeviceCameraDropdowns(deviceDetails, isOnline) {
-    const deviceSelect = document.getElementById('deviceSelect');
-    if (!deviceSelect) return;
-    
-    const detailsJson = JSON.stringify(deviceDetails);
-    if (detailsJson === lastDeviceDetailsJson) return;
-    lastDeviceDetailsJson = detailsJson;
-
-    const currentDeviceId = deviceSelect.value;
-    deviceSelect.innerHTML = '<option value="">选择目标设备...</option>';
-    
-    Object.keys(deviceDetails).forEach(devId => {
-        const opt = document.createElement('option');
-        opt.value = devId;
-        opt.innerText = devId;
-        if (devId === currentDeviceId) opt.selected = true;
-        deviceSelect.appendChild(opt);
-    });
-
-    window.allDeviceDetails = deviceDetails; 
-    onDeviceChange();
 }
 
 function loadHistoryList() {
@@ -569,12 +446,5 @@ function disconnectMqtt() {
 }
 </script>
 
-<style>
-@keyframes pulse-green {
-    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
-    70% { transform: scale(1); box-shadow: 0 0 0 5px rgba(16, 185, 129, 0); }
-    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
-}
-</style>
 {% endblock %}
 {% endblock %}

@@ -10,8 +10,8 @@
                 <i class="fas fa-university me-3 text-primary pulse-glow"></i>
                 <span class="text-gradient">守护校园，筑梦未来</span>
             </h2>
-            <div class="p-4 rounded-4 shadow-sm border" style="background: #ffffff; border-color: #e2e8f0 !important;">
-                <p class="fs-5 mb-0" style="color: #475569; line-height: 1.8;">
+            <div class="p-4 rounded-4 shadow-sm border" style="background: var(--card-bg); border-color: var(--border-color) !important;">
+                <p class="fs-5 mb-0" style="color: var(--text-main); opacity: 0.85; line-height: 1.8;">
                     <i class="fas fa-quote-left me-3 opacity-25"></i>
                     每一位师生的平安，是我们最深切的牵挂。校园安防智能监测系统正在默默守护着这里的每一个角落，让安全如影随形，让温暖常驻校园。
                 </p>
@@ -92,7 +92,7 @@
 
     <div class="row">
         <div class="col-md-12">
-            <div class="card border-0 shadow-sm rounded-4 p-4" style="background: #ffffff;">
+            <div class="card border-0 shadow-sm rounded-4 p-4" style="background: var(--card-bg);">
                 <div class="d-flex justify-content-between align-items-center">
                     <div class="d-flex align-items-center">
                         <div class="me-5">
@@ -187,17 +187,19 @@
     }
 
     function loadDashboardStats() {
-        // 加载在线设备统计
-        fetch('/settings/api/mqtt/realtime-stats')
+        // 加载MQTT连接状态
+        fetch('/settings/api/mqtt/status')
             .then(res => res.json())
             .then(data => {
                 if (data.connected) {
-                    document.getElementById('cameraCount').textContent = data.camera_count;
+                    document.getElementById('cameraCount').textContent = '在线';
                 } else {
                     document.getElementById('cameraCount').textContent = '未连接';
                 }
             })
-            .catch(() => {});
+            .catch(() => {
+                document.getElementById('cameraCount').textContent = '未连接';
+            });
 
         // 加载今日巡检统计 (今日告警数)
         const today = new Date().toISOString().split('T')[0];
