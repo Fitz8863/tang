@@ -6,8 +6,9 @@
 #include <iomanip>
 
 PublisherThread::PublisherThread(const std::vector<std::reference_wrapper<CameraStatus>>& statuses,
+                                 const std::string& device_id,
                                  const std::string& server, const std::string& topic, int interval)
-    : statuses_(statuses), server_(server), topic_(topic), interval_(interval),
+    : statuses_(statuses), device_id_(device_id), server_(server), topic_(topic), interval_(interval),
       running_(false), connected_(false) {}
 
 PublisherThread::~PublisherThread() {
@@ -57,7 +58,7 @@ std::string PublisherThread::BuildJsonMessage() {
         timestamp = statuses_[0].get().GetTimestamp();
     }
     
-    oss << "{\"timestamp_ns\":" << timestamp << ",\"cameras\":[";
+    oss << "{\"device_id\":\"" << device_id_ << "\",\"timestamp_ns\":" << timestamp << ",\"cameras\":[";
     
     for (size_t i = 0; i < statuses_.size(); ++i) {
         const auto& status = statuses_[i].get();

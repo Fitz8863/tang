@@ -12,6 +12,7 @@ namespace mqtt { class async_client; }
 class PublisherThread {
 public:
     PublisherThread(const std::vector<std::reference_wrapper<CameraStatus>>& statuses,
+                    const std::string& device_id,
                     const std::string& server, const std::string& topic, int interval);
     ~PublisherThread();
     
@@ -27,6 +28,7 @@ private:
     
     std::vector<std::reference_wrapper<CameraStatus>> statuses_;
     std::thread thread_;
+    std::string device_id_;
     std::string server_;
     std::string topic_;
     int interval_;

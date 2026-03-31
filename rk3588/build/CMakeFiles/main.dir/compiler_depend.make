@@ -1011,21 +1011,72 @@ CMakeFiles/main.dir/src/main.cc.o: ../src/main.cc \
   /usr/include/c++/11/bits/stl_vector.h \
   /usr/include/c++/11/bits/stl_bvector.h \
   /usr/include/c++/11/bits/vector.tcc \
-  ../src/camera_manager.h \
-  ../src/camera_status.h \
-  /usr/include/c++/11/atomic \
-  /usr/include/c++/11/mutex \
+  /usr/include/c++/11/csignal \
+  /usr/include/signal.h \
+  /usr/include/aarch64-linux-gnu/bits/signum-generic.h \
+  /usr/include/aarch64-linux-gnu/bits/signum-arch.h \
+  /usr/include/aarch64-linux-gnu/bits/types/sig_atomic_t.h \
+  /usr/include/aarch64-linux-gnu/bits/types/siginfo_t.h \
+  /usr/include/aarch64-linux-gnu/bits/types/__sigval_t.h \
+  /usr/include/aarch64-linux-gnu/bits/siginfo-arch.h \
+  /usr/include/aarch64-linux-gnu/bits/siginfo-consts.h \
+  /usr/include/aarch64-linux-gnu/bits/siginfo-consts-arch.h \
+  /usr/include/aarch64-linux-gnu/bits/types/sigval_t.h \
+  /usr/include/aarch64-linux-gnu/bits/types/sigevent_t.h \
+  /usr/include/aarch64-linux-gnu/bits/sigevent-consts.h \
+  /usr/include/aarch64-linux-gnu/bits/sigaction.h \
+  /usr/include/aarch64-linux-gnu/bits/sigcontext.h \
+  /usr/include/aarch64-linux-gnu/asm/sigcontext.h \
+  /usr/include/linux/types.h \
+  /usr/include/aarch64-linux-gnu/asm/types.h \
+  /usr/include/asm-generic/types.h \
+  /usr/include/asm-generic/int-ll64.h \
+  /usr/include/aarch64-linux-gnu/asm/bitsperlong.h \
+  /usr/include/asm-generic/bitsperlong.h \
+  /usr/include/linux/posix_types.h \
+  /usr/include/linux/stddef.h \
+  /usr/include/aarch64-linux-gnu/asm/posix_types.h \
+  /usr/include/asm-generic/posix_types.h \
+  /usr/include/aarch64-linux-gnu/asm/sve_context.h \
+  /usr/include/aarch64-linux-gnu/bits/types/stack_t.h \
+  /usr/include/aarch64-linux-gnu/sys/ucontext.h \
+  /usr/include/aarch64-linux-gnu/sys/procfs.h \
+  /usr/include/aarch64-linux-gnu/sys/time.h \
+  /usr/include/aarch64-linux-gnu/sys/user.h \
+  /usr/include/aarch64-linux-gnu/bits/procfs.h \
+  /usr/include/aarch64-linux-gnu/bits/procfs-id.h \
+  /usr/include/aarch64-linux-gnu/bits/procfs-prregset.h \
+  /usr/include/aarch64-linux-gnu/bits/procfs-extra.h \
+  /usr/include/aarch64-linux-gnu/bits/sigstack.h \
+  /usr/include/aarch64-linux-gnu/bits/sigstksz.h \
+  /usr/include/unistd.h \
+  /usr/include/aarch64-linux-gnu/bits/posix_opt.h \
+  /usr/include/aarch64-linux-gnu/bits/environments.h \
+  /usr/include/aarch64-linux-gnu/bits/confname.h \
+  /usr/include/aarch64-linux-gnu/bits/getopt_posix.h \
+  /usr/include/aarch64-linux-gnu/bits/getopt_core.h \
+  /usr/include/aarch64-linux-gnu/bits/unistd_ext.h \
+  /usr/include/linux/close_range.h \
+  /usr/include/aarch64-linux-gnu/bits/ss_flags.h \
+  /usr/include/aarch64-linux-gnu/bits/types/struct_sigstack.h \
+  /usr/include/aarch64-linux-gnu/bits/sigthread.h \
+  /usr/include/aarch64-linux-gnu/bits/signal_ext.h \
+  /usr/include/c++/11/thread \
+  /usr/include/c++/11/bits/std_thread.h \
+  /usr/include/c++/11/bits/this_thread_sleep.h \
   /usr/include/c++/11/chrono \
   /usr/include/c++/11/ratio \
   /usr/include/c++/11/limits \
   /usr/include/c++/11/ctime \
   /usr/include/c++/11/bits/parse_numbers.h \
+  ../src/global_running.h \
+  /usr/include/c++/11/atomic \
+  ../src/camera_manager.h \
+  ../src/camera_status.h \
+  /usr/include/c++/11/mutex \
   /usr/include/c++/11/bits/std_mutex.h \
   /usr/include/c++/11/bits/unique_lock.h \
   ../src/capture_thread.h \
-  /usr/include/c++/11/thread \
-  /usr/include/c++/11/bits/std_thread.h \
-  /usr/include/c++/11/bits/this_thread_sleep.h \
   ../src/voice_capture_thread.h \
   ../src/publisher_thread.h \
   /usr/include/yaml-cpp/yaml.h \
@@ -1600,6 +1651,7 @@ CMakeFiles/main.dir/src/voice_capture_thread.cc.o: ../src/voice_capture_thread.c
   /usr/include/c++/11/stdexcept \
   /usr/include/c++/11/bits/std_mutex.h \
   /usr/include/c++/11/bits/unique_lock.h \
+  ../src/global_running.h \
   /usr/include/c++/11/iostream \
   /usr/include/c++/11/ostream \
   /usr/include/c++/11/ios \
@@ -1620,99 +1672,8 @@ CMakeFiles/main.dir/src/voice_capture_thread.cc.o: ../src/voice_capture_thread.c
   /usr/include/c++/11/bits/basic_ios.tcc \
   /usr/include/c++/11/bits/ostream.tcc \
   /usr/include/c++/11/istream \
-  /usr/include/c++/11/bits/istream.tcc \
-  /usr/include/signal.h \
-  /usr/include/aarch64-linux-gnu/bits/signum-generic.h \
-  /usr/include/aarch64-linux-gnu/bits/signum-arch.h \
-  /usr/include/aarch64-linux-gnu/bits/types/sig_atomic_t.h \
-  /usr/include/aarch64-linux-gnu/bits/types/siginfo_t.h \
-  /usr/include/aarch64-linux-gnu/bits/types/__sigval_t.h \
-  /usr/include/aarch64-linux-gnu/bits/siginfo-arch.h \
-  /usr/include/aarch64-linux-gnu/bits/siginfo-consts.h \
-  /usr/include/aarch64-linux-gnu/bits/siginfo-consts-arch.h \
-  /usr/include/aarch64-linux-gnu/bits/types/sigval_t.h \
-  /usr/include/aarch64-linux-gnu/bits/types/sigevent_t.h \
-  /usr/include/aarch64-linux-gnu/bits/sigevent-consts.h \
-  /usr/include/aarch64-linux-gnu/bits/sigaction.h \
-  /usr/include/aarch64-linux-gnu/bits/sigcontext.h \
-  /usr/include/aarch64-linux-gnu/asm/sigcontext.h \
-  /usr/include/linux/types.h \
-  /usr/include/aarch64-linux-gnu/asm/types.h \
-  /usr/include/asm-generic/types.h \
-  /usr/include/asm-generic/int-ll64.h \
-  /usr/include/aarch64-linux-gnu/asm/bitsperlong.h \
-  /usr/include/asm-generic/bitsperlong.h \
-  /usr/include/linux/posix_types.h \
-  /usr/include/linux/stddef.h \
-  /usr/include/aarch64-linux-gnu/asm/posix_types.h \
-  /usr/include/asm-generic/posix_types.h \
-  /usr/include/aarch64-linux-gnu/asm/sve_context.h \
-  /usr/include/aarch64-linux-gnu/bits/types/stack_t.h \
-  /usr/include/aarch64-linux-gnu/sys/ucontext.h \
-  /usr/include/aarch64-linux-gnu/sys/procfs.h \
-  /usr/include/aarch64-linux-gnu/sys/time.h \
-  /usr/include/aarch64-linux-gnu/sys/user.h \
-  /usr/include/aarch64-linux-gnu/bits/procfs.h \
-  /usr/include/aarch64-linux-gnu/bits/procfs-id.h \
-  /usr/include/aarch64-linux-gnu/bits/procfs-prregset.h \
-  /usr/include/aarch64-linux-gnu/bits/procfs-extra.h \
-  /usr/include/aarch64-linux-gnu/bits/sigstack.h \
-  /usr/include/aarch64-linux-gnu/bits/sigstksz.h \
-  /usr/include/unistd.h \
-  /usr/include/aarch64-linux-gnu/bits/posix_opt.h \
-  /usr/include/aarch64-linux-gnu/bits/environments.h \
-  /usr/include/aarch64-linux-gnu/bits/confname.h \
-  /usr/include/aarch64-linux-gnu/bits/getopt_posix.h \
-  /usr/include/aarch64-linux-gnu/bits/getopt_core.h \
-  /usr/include/aarch64-linux-gnu/bits/unistd_ext.h \
-  /usr/include/linux/close_range.h \
-  /usr/include/aarch64-linux-gnu/bits/ss_flags.h \
-  /usr/include/aarch64-linux-gnu/bits/types/struct_sigstack.h \
-  /usr/include/aarch64-linux-gnu/bits/sigthread.h \
-  /usr/include/aarch64-linux-gnu/bits/signal_ext.h
+  /usr/include/c++/11/bits/istream.tcc
 
-
-/usr/include/aarch64-linux-gnu/bits/types/struct_sigstack.h:
-
-/usr/include/aarch64-linux-gnu/bits/ss_flags.h:
-
-/usr/include/linux/close_range.h:
-
-/usr/include/aarch64-linux-gnu/bits/unistd_ext.h:
-
-/usr/include/aarch64-linux-gnu/bits/getopt_posix.h:
-
-/usr/include/aarch64-linux-gnu/bits/confname.h:
-
-/usr/include/aarch64-linux-gnu/bits/procfs-prregset.h:
-
-/usr/include/aarch64-linux-gnu/bits/procfs.h:
-
-/usr/include/aarch64-linux-gnu/sys/user.h:
-
-/usr/include/asm-generic/posix_types.h:
-
-/usr/include/linux/posix_types.h:
-
-/usr/include/linux/types.h:
-
-/usr/include/aarch64-linux-gnu/bits/types/sigevent_t.h:
-
-/usr/include/aarch64-linux-gnu/bits/siginfo-consts-arch.h:
-
-/usr/include/aarch64-linux-gnu/bits/siginfo-arch.h:
-
-/usr/include/aarch64-linux-gnu/bits/types/__sigval_t.h:
-
-/usr/include/aarch64-linux-gnu/bits/types/siginfo_t.h:
-
-/usr/include/aarch64-linux-gnu/bits/types/sig_atomic_t.h:
-
-/usr/include/aarch64-linux-gnu/asm/sigcontext.h:
-
-/usr/include/aarch64-linux-gnu/bits/signum-arch.h:
-
-/usr/include/aarch64-linux-gnu/bits/signum-generic.h:
 
 ../src/voice_capture_thread.cc:
 
@@ -1723,10 +1684,6 @@ CMakeFiles/main.dir/src/voice_capture_thread.cc.o: ../src/voice_capture_thread.c
 /usr/local/include/mqtt/buffer_view.h:
 
 /usr/local/include/mqtt/server_response.h:
-
-/usr/include/aarch64-linux-gnu/sys/ucontext.h:
-
-/usr/local/include/mqtt/token.h:
 
 /usr/local/include/mqtt/message.h:
 
@@ -1762,12 +1719,6 @@ CMakeFiles/main.dir/src/voice_capture_thread.cc.o: ../src/voice_capture_thread.c
 
 /usr/include/yaml-cpp/node/detail/iterator_fwd.h:
 
-/usr/include/aarch64-linux-gnu/sys/procfs.h:
-
-/usr/include/aarch64-linux-gnu/bits/types/stack_t.h:
-
-/usr/include/yaml-cpp/node/node.h:
-
 /usr/include/yaml-cpp/mark.h:
 
 /usr/include/yaml-cpp/exceptions.h:
@@ -1779,6 +1730,58 @@ CMakeFiles/main.dir/src/voice_capture_thread.cc.o: ../src/voice_capture_thread.c
 /usr/include/yaml-cpp/binary.h:
 
 /usr/include/yaml-cpp/yaml.h:
+
+/usr/include/aarch64-linux-gnu/bits/types/struct_sigstack.h:
+
+/usr/include/aarch64-linux-gnu/bits/ss_flags.h:
+
+/usr/include/linux/close_range.h:
+
+/usr/include/aarch64-linux-gnu/bits/unistd_ext.h:
+
+/usr/include/aarch64-linux-gnu/bits/getopt_posix.h:
+
+/usr/include/aarch64-linux-gnu/bits/confname.h:
+
+/usr/include/aarch64-linux-gnu/bits/procfs-prregset.h:
+
+/usr/include/aarch64-linux-gnu/bits/procfs.h:
+
+/usr/include/aarch64-linux-gnu/sys/user.h:
+
+/usr/local/include/mqtt/token.h:
+
+/usr/include/aarch64-linux-gnu/sys/ucontext.h:
+
+/usr/include/yaml-cpp/node/node.h:
+
+/usr/include/aarch64-linux-gnu/sys/procfs.h:
+
+/usr/include/aarch64-linux-gnu/bits/types/stack_t.h:
+
+/usr/include/asm-generic/posix_types.h:
+
+/usr/include/linux/posix_types.h:
+
+/usr/include/linux/types.h:
+
+/usr/include/aarch64-linux-gnu/bits/types/sigevent_t.h:
+
+/usr/include/aarch64-linux-gnu/bits/siginfo-consts-arch.h:
+
+/usr/include/aarch64-linux-gnu/bits/siginfo-arch.h:
+
+/usr/include/aarch64-linux-gnu/bits/types/__sigval_t.h:
+
+/usr/include/aarch64-linux-gnu/bits/types/siginfo_t.h:
+
+/usr/include/aarch64-linux-gnu/bits/types/sig_atomic_t.h:
+
+/usr/include/aarch64-linux-gnu/asm/sigcontext.h:
+
+/usr/include/aarch64-linux-gnu/bits/signum-arch.h:
+
+/usr/include/aarch64-linux-gnu/bits/signum-generic.h:
 
 ../src/main.cc:
 
@@ -1806,9 +1809,9 @@ CMakeFiles/main.dir/src/voice_capture_thread.cc.o: ../src/voice_capture_thread.c
 
 /usr/include/c++/11/list:
 
-/usr/include/aarch64-linux-gnu/bits/sigstksz.h:
-
 /usr/local/include/MQTTSubscribeOpts.h:
+
+/usr/include/aarch64-linux-gnu/bits/sigstksz.h:
 
 /usr/include/opencv4/opencv2/stitching/detail/matchers.hpp:
 
@@ -2174,6 +2177,8 @@ CMakeFiles/main.dir/src/voice_capture_thread.cc.o: ../src/voice_capture_thread.c
 
 /usr/include/c++/11/ext/type_traits.h:
 
+/usr/include/c++/11/csignal:
+
 /usr/include/opencv4/opencv2/flann/all_indices.h:
 
 /usr/include/c++/11/pstl/glue_memory_defs.h:
@@ -2196,11 +2201,11 @@ CMakeFiles/main.dir/src/voice_capture_thread.cc.o: ../src/voice_capture_thread.c
 
 /usr/include/aarch64-linux-gnu/bits/atomic_wide_counter.h:
 
-/usr/include/aarch64-linux-gnu/bits/environments.h:
-
 /usr/local/include/mqtt/reason_code.h:
 
 /usr/local/include/mqtt/callback.h:
+
+/usr/include/aarch64-linux-gnu/bits/environments.h:
 
 /usr/include/opencv4/opencv2/core/fast_math.hpp:
 
@@ -2572,11 +2577,13 @@ CMakeFiles/main.dir/src/voice_capture_thread.cc.o: ../src/voice_capture_thread.c
 
 /usr/include/aarch64-linux-gnu/bits/waitstatus.h:
 
+../src/global_running.h:
+
 /usr/include/aarch64-linux-gnu/bits/uintn-identity.h:
 
-/usr/include/aarch64-linux-gnu/bits/sigevent-consts.h:
-
 /usr/local/include/mqtt/async_client.h:
+
+/usr/include/aarch64-linux-gnu/bits/sigevent-consts.h:
 
 /usr/include/aarch64-linux-gnu/gnu/stubs-lp64.h:
 
