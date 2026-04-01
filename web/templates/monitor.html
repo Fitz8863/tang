@@ -142,6 +142,54 @@
         0%, 100% { opacity: 1; }
         50% { opacity: 0.5; }
     }
+    /* VLM 分析结果面板 */
+    .vlm-panel {
+        padding: 12px 16px;
+        border-top: 1px solid var(--border-color);
+        background: var(--card-bg);
+        display: none;
+        transition: all 0.3s ease;
+    }
+    .vlm-panel.visible {
+        display: block;
+    }
+    .vlm-panel .vlm-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 6px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .vlm-panel .vlm-header i {
+        font-size: 0.9rem;
+    }
+    .vlm-panel .vlm-body {
+        font-size: 0.9rem;
+        line-height: 1.5;
+        color: var(--text-muted);
+    }
+    .vlm-panel.vlm-danger {
+        border-left: 4px solid #ef4444;
+    }
+    .vlm-panel.vlm-danger .vlm-header {
+        color: #ef4444;
+    }
+    .vlm-panel.vlm-safe {
+        border-left: 4px solid #10b981;
+    }
+    .vlm-panel.vlm-safe .vlm-header {
+        color: #10b981;
+    }
+    .vlm-panel .vlm-timer {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        text-align: right;
+        margin-top: 4px;
+        opacity: 0.6;
+    }
     {% if not current_user.is_authenticated %}
     .alert-info {
         background: var(--primary-subtle);
@@ -199,6 +247,7 @@
         pollInterval = setInterval(syncCameras, 10000);
         updateCameraStats();
         setInterval(updateCameraStats, 3000);
+        setInterval(pollVlmStatus, VLM_POLL_INTERVAL);
         
         // 页面加载后延迟获取当前后台音频播放状态
         setTimeout(checkAudioStatus, 1500);
@@ -329,6 +378,13 @@
                     <span><i class="fas fa-video"></i> 远程视频流</span>
                 </div>
             </div>
+            <div class="vlm-panel" id="vlm-panel-${id}">
+                <div class="vlm-header">
+                    <i class="fas fa-robot"></i>
+                    <span class="vlm-status-text">AI 行为分析</span>
+                </div>
+                <div class="vlm-body" id="vlm-body-${id}"></div>
+            </div>
         `;
         
         return card;
@@ -346,6 +402,57 @@
         if (nameEl && nameEl.innerText !== name) {
             nameEl.innerHTML = `<i class="fas fa-map-marker-alt me-2"></i>${name}`;
         }
+    }
+
+    // --- VLM 分析结果面板管理 ---
+    const VLM_POLL_INTERVAL = 2000;  // 2秒轮询一次
+    const VLM_AUTO_HIDE_TIMEOUT = 12; // 超过12秒无更新则隐藏面板
+
+    function pollVlmStatus() {
+        activeCameras.forEach((_, id) => {
+            fetch(`/settings/api/vlm/status/${id}`)
+                .then(res => res.json())
+                .then(data => {
+                    const panel = document.getElementById(`vlm-panel-${id}`);
+                    const body = document.getElementById(`vlm-body-${id}`);
+                    
+                    if (!panel || !body) return;
+
+                    if (data.active && data.result) {
+                        const isViolent = data.result.is_violent || false;
+                        const desc = data.result.description || '暂无描述';
+                        const threatLevel = data.result.threat_level || 'low';
+                        const numPeople = data.result.num_people_involved || 0;
+                        const evidence = data.result.evidence || '';
+
+                        panel.className = `vlm-panel visible ${isViolent ? 'vlm-danger' : 'vlm-safe'}`;
+                        
+                        const icon = isViolent ? '⚠️' : '✅';
+                        const statusText = isViolent ? '检测到异常行为!' : '画面正常';
+                        const threatBadge = isViolent 
+                            ? `<span style="font-size:0.75rem;padding:2px 8px;border-radius:10px;background:#ef4444;color:#fff;">${threatLevel === 'high' ? '高危' : threatLevel === 'medium' ? '中危' : '低危'}</span>`
+                            : `<span style="font-size:0.75rem;padding:2px 8px;border-radius:10px;background:#10b981;color:#fff;">安全</span>`;
+                        
+                        body.innerHTML = `
+                            <div class="d-flex justify-content-between align-items-start mb-1">
+                                <span>${icon} <strong>${statusText}</strong></span>
+                                ${threatBadge}
+                            </div>
+                            <div style="font-size:0.85rem;color:var(--text-muted);margin-bottom:4px;">${desc}</div>
+                            ${numPeople > 0 ? `<div style="font-size:0.8rem;color:var(--text-muted);">涉及人数: <strong>${numPeople}</strong></div>` : ''}
+                            ${evidence ? `<div style="font-size:0.75rem;color:var(--text-muted);margin-top:4px;opacity:0.7;">证据: ${evidence}</div>` : ''}
+                        `;
+                        
+                        const elapsed = data.elapsed || 0;
+                        if (elapsed > VLM_AUTO_HIDE_TIMEOUT) {
+                            panel.classList.remove('visible');
+                        }
+                    } else {
+                        panel.classList.remove('visible');
+                    }
+                })
+                .catch(() => {});
+        });
     }
 
     // --- 音频流管理逻辑 (服务器端直出方案) ---

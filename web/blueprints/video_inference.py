@@ -5,6 +5,9 @@ import time
 import os
 import sys
 import subprocess
+import requests
+import base64
+import json
 from collections import defaultdict
 from queue import Queue, Empty, Full
 
@@ -16,7 +19,15 @@ try:
         YOLO_IOU_THRESHOLD, 
         YOLO_DEVICE, 
         YOLO_IMG_SIZE,
-        YOLO_QUEUE_SIZE
+        YOLO_QUEUE_SIZE,
+        VLM_ENABLED,
+        VLM_BACKEND,
+        VLM_API_BASE,
+        VLM_API_KEY,
+        VLM_MODEL_NAME,
+        VLM_FRAME_SKIP,
+        VLM_ANALYZE_INTERVAL,
+        VLM_PROMPT
     )
 except ImportError:
     YOLO_MODEL_PATH = 'model/yolo26n_openvino_model/'
@@ -25,6 +36,14 @@ except ImportError:
     YOLO_DEVICE = 'cpu'
     YOLO_IMG_SIZE = 640
     YOLO_QUEUE_SIZE = 1
+    VLM_ENABLED = False
+    VLM_BACKEND = 'ollama'
+    VLM_API_BASE = 'http://localhost:11434/api/chat'
+    VLM_API_KEY = ''
+    VLM_MODEL_NAME = 'llava'
+    VLM_FRAME_SKIP = 30
+    VLM_ANALYZE_INTERVAL = 5.0
+    VLM_PROMPT = ""
 
 third_party_path = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
@@ -37,16 +56,26 @@ from ultralytics import YOLO
 
 class VideoInference:
     def __init__(self, model_path=YOLO_MODEL_PATH):
+        self.pid = os.getpid()
+        print(f"[VideoInference] 正在实例化守护进程，当前 PID: {self.pid}")
+        
+        self.app = None
         self.model = None
         self.model_path = model_path
         self.captures = {}
         # 管理全局 ffmpeg 音频进程
         self.audio_processes = {}
+        # 记录前端通过按键主动停止（静音）的摄像头ID
+        self.muted_cameras = set()
         self.lock = threading.Lock()
+        # 增加一个专门用于启动音频的锁，防止并发瞬间启动两次
+        self.audio_start_lock = threading.Lock()
         self.fps_stats = defaultdict(lambda: {"count": 0, "start_time": time.time(), "display": 0})
         
         self.running = True
-        threading.Thread(target=self._daemon_sync_loop, daemon=True).start()
+        daemon_thread = threading.Thread(target=self._daemon_sync_loop, daemon=True)
+        daemon_thread.name = f"DaemonSyncThread-{self.pid}"
+        daemon_thread.start()
         
     def _daemon_sync_loop(self):
         """全天候同步守护进程：根据 MQTT 心跳自动维持所有在线设备的拉流(视频+音频)和推理"""
@@ -73,7 +102,7 @@ class VideoInference:
                         
                     # --- 音频拉流自动启动 ---
                     audio_url = cam.get('voice_rtsp_url')
-                    if audio_url:
+                    if audio_url and cam_id not in self.muted_cameras:
                         self.get_or_create_audio(cam_id, audio_url)
                         
                 # 2. 清理已经离线（不在心跳包中）的设备资源
@@ -95,7 +124,8 @@ class VideoInference:
 
     def get_or_create_audio(self, camera_id, stream_url):
         """确保音频进程存在且在运行。如果在运行，不干预；如果死亡，尝试重启。"""
-        with self.lock:
+        # 使用专用锁防止瞬间并发启动两个进程
+        with self.audio_start_lock:
             if camera_id in self.audio_processes:
                 proc = self.audio_processes[camera_id]['proc']
                 url = self.audio_processes[camera_id]['url']
@@ -106,25 +136,25 @@ class VideoInference:
                 # 否则杀掉旧的，准备重建
                 self.stop_audio(camera_id, locked=True)
                 
-            print(f"[Audio] 检测到设备上线，自动在后台拉取音频流: {camera_id}")
+            print(f"[PID:{self.pid}] [Audio] 检测到设备上线，启动 ffplay 后台拉流: {camera_id}")
             cmd = [
-                'ffplay', '-nodisp', 
-                '-rtsp_transport', 'tcp', 
-                '-fflags', 'nobuffer', 
-                '-flags', 'low_delay', 
+                'ffplay', '-nodisp', '-rtsp_transport', 'tcp', 
+                '-fflags', 'nobuffer', '-flags', 'low_delay', 
                 '-framedrop', '-strict', 'experimental', 
-                # 终极抗延迟核心参数：
-                '-sync', 'ext',                 # 强制与系统真实时间同步，迟到的音频包直接丢弃
-                '-af', 'aresample=async=1',     # 启用异步重采样，动态拉伸声音消耗掉积压的缓冲
-                '-probesize', '32',             # 极限压缩格式探测时间
-                '-analyzeduration', '0',
+                '-sync', 'ext', '-af', 'aresample=async=1', 
+                '-probesize', '32', '-analyzeduration', '0',
                 '-i', stream_url
             ]
-            proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            self.audio_processes[camera_id] = {
-                'proc': proc,
-                'url': stream_url
-            }
+            try:
+                proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                # 必须立即存入字典，防止下一轮循环误判
+                self.audio_processes[camera_id] = {
+                    'proc': proc,
+                    'url': stream_url
+                }
+            except Exception as e:
+                print(f"[Audio] 启动进程失败: {e}")
+
             
     def stop_audio(self, camera_id, locked=False):
         """停止特定摄像头的音频拉流"""
@@ -140,6 +170,24 @@ class VideoInference:
             with self.lock:
                 _kill()
                 
+    def set_audio_muted(self, camera_id, muted):
+        """响应前端操作，将特定摄像头加入或移出静音集合，并同步停止进程"""
+        with self.lock:
+            if muted:
+                self.muted_cameras.add(camera_id)
+                self.stop_audio(camera_id, locked=True)
+            else:
+                self.muted_cameras.discard(camera_id)
+                # 移出后，下一次 _daemon_sync_loop 会自动将其重启拉流
+                
+    def is_audio_playing(self, camera_id):
+        """查询后台 ffplay 是否正在运行"""
+        with self.audio_start_lock:
+            if camera_id in self.audio_processes:
+                proc = self.audio_processes[camera_id]['proc']
+                return proc.poll() is None
+            return False
+
     # ------ 以下是原有的模型加载和视频线程方法 ------
     def load_model(self):
         if self.model is None:
@@ -182,6 +230,9 @@ class VideoInference:
                     'url': stream_url,
                     'raw_queue': Queue(maxsize=int(YOLO_QUEUE_SIZE)),
                     'latest_jpeg': None,  # 缓存压缩后的 JPEG 数据，实现单次编码多路分发
+                    'last_vlm_time': 0,   # 记录上次发送给 VLM 的时间戳
+                    'vlm_result': None,   # 记录 VLM 返回的行为分析结果
+                    'vlm_frame_counter': 0, # VLM 抽帧计数器
                     'lock': threading.Lock(),
                     'stop_event': threading.Event(),
                     'threads': []
@@ -259,6 +310,7 @@ class VideoInference:
                     'source': frame,
                     'conf': float(YOLO_CONF_THRESHOLD),
                     'iou': float(YOLO_IOU_THRESHOLD),
+                    'classes': [0], # 仅识别 0 号类别 (通常是 person 人)
                     'verbose': False
                 }
                 
@@ -269,6 +321,29 @@ class VideoInference:
                 results = self.model.predict(**infer_args)
                 
                 annotated_frame = results[0].plot()
+                
+                # ==========================================
+                # VLM 多模态大模型异步联动分析逻辑
+                # ==========================================
+                if VLM_ENABLED and len(results[0].boxes) > 0:
+                    current_time = time.time()
+                    with c_data['lock']:
+                        c_data['vlm_frame_counter'] += 1
+                        frame_count = c_data['vlm_frame_counter']
+                        last_vlm_time = c_data.get('last_vlm_time', 0)
+                        
+                    # 只有达到抽帧间隔且超过冷却时间才触发
+                    if frame_count >= int(VLM_FRAME_SKIP) and (current_time - last_vlm_time > float(VLM_ANALYZE_INTERVAL)):
+                        with c_data['lock']:
+                            c_data['last_vlm_time'] = current_time
+                            c_data['vlm_frame_counter'] = 0  # 触发后重置计数器
+                        
+                        # 开启一个独立的守护线程进行请求，绝不阻塞当前的视频流推理
+                        threading.Thread(
+                            target=self._run_vlm_analysis, 
+                            args=(camera_id, frame.copy()), 
+                            daemon=True
+                        ).start()
                 
                 # 计算 FPS 并叠加
                 stats = self.fps_stats[camera_id]
@@ -317,6 +392,180 @@ class VideoInference:
         with self.lock:
             for camera_id in list(self.captures.keys()):
                 self.stop_capture(camera_id)
+
+    def _run_vlm_analysis(self, camera_id, frame):
+        """专门负责与 Ollama / OpenAI API 交互的后台大模型推理子线程"""
+        try:
+            # 1. 缩放图像以节省带宽和推理算力
+            resized = cv2.resize(frame, (640, 480))
+            ret, buffer = cv2.imencode('.jpg', resized, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
+            if not ret: return
+            
+            b64_image = base64.b64encode(buffer).decode('utf-8')
+            
+            payload = {}
+            if VLM_BACKEND.lower() == 'ollama':
+                payload = {
+                    "model": VLM_MODEL_NAME,
+                    "messages": [
+                        {
+                            "role": "user",
+                            "content": VLM_PROMPT,
+                            "images": [b64_image]
+                        }
+                    ],
+                    "stream": False,
+                    "format": "json"
+                }
+                headers = {'Content-Type': 'application/json'}
+            elif VLM_BACKEND.lower() == 'openai':
+                payload = {
+                    "model": VLM_MODEL_NAME,
+                    "messages": [
+                        {
+                            "role": "user",
+                            "content": [
+                                {"type": "text", "text": VLM_PROMPT},
+                                {
+                                    "type": "image_url",
+                                    "image_url": {
+                                        "url": f"data:image/jpeg;base64,{b64_image}",
+                                        "detail": "low"
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "response_format": { "type": "json_object" }
+                }
+                headers = {
+                    'Content-Type': 'application/json',
+                    'Authorization': f'Bearer {VLM_API_KEY}'
+                }
+            else:
+                print(f"[VLM] 未知的 VLM 后端: {VLM_BACKEND}")
+                return
+
+            print(f"[VLM] 正在向 {VLM_BACKEND} 引擎发送行为分析请求...")
+            start_time = time.time()
+            
+            # 使用较长超时时间（大模型处理图片通常需要 2-10 秒）
+            response = requests.post(VLM_API_BASE, json=payload, headers=headers, timeout=30)
+            
+            if response.status_code == 200:
+                resp_json = response.json()
+                content = ""
+                
+                # 兼容 Ollama 和 OpenAI 的返回结构
+                if VLM_BACKEND.lower() == 'ollama':
+                    content = resp_json.get('message', {}).get('content', '{}')
+                else:
+                    content = resp_json['choices'][0]['message']['content']
+                
+                # 尝试解析大模型返回的严格 JSON
+                try:
+                    result_dict = json.loads(content)
+                    print(f"[VLM] 分析完成 (耗时: {time.time() - start_time:.1f}s), 结果: {result_dict}")
+                    
+                    with self.lock:
+                        c_data = self.captures.get(camera_id)
+                        if c_data:
+                            with c_data['lock']:
+                                c_data['vlm_result'] = result_dict
+                    if result_dict.get('is_violent', False):
+                        self._handle_violent_capture(camera_id, frame, result_dict)
+                        
+                except json.JSONDecodeError:
+                    print(f"[VLM] 解析大模型返回的 JSON 失败, 原文: {content}")
+            else:
+                print(f"[VLM] 请求失败，状态码: {response.status_code}, {response.text}")
+                
+        except Exception as e:
+            print(f"[VLM] 大模型请求异常: {e}")
+
+    def _handle_violent_capture(self, camera_id, frame, vlm_result):
+        """当 VLM 检测到暴力行为时，自动抓拍图片、保存数据库、并推送 SocketIO 警报"""
+        try:
+            import os
+            import uuid
+            from datetime import datetime
+            
+            upload_path = os.path.join(
+                os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                'static', 'captures'
+            )
+            os.makedirs(upload_path, exist_ok=True)
+            
+            filename = f"violent_{uuid.uuid4().hex[:8]}.jpg"
+            filepath = os.path.join(upload_path, filename)
+            cv2.imwrite(filepath, frame)
+            
+            location = '未知位置'
+            try:
+                from blueprints.mqtt_manager import mqtt_manager
+                if mqtt_manager and mqtt_manager.latest_jetson_info:
+                    for cam in mqtt_manager.latest_jetson_info.get('cameras', []):
+                        if str(cam.get('id', '')) == str(camera_id):
+                            location = cam.get('location', '未知位置')
+                            break
+            except:
+                pass
+            
+            threat_level = vlm_result.get('threat_level', 'low')
+            behavior_type = vlm_result.get('behavior_type', 'normal')
+            num_people = vlm_result.get('num_people_involved', 0)
+            evidence = vlm_result.get('evidence', '')
+            description = vlm_result.get('description', '')
+            
+            try:
+                from blueprints.models import Capture
+                from blueprints import db
+                
+                if not self.app:
+                    print("[VLM 抓拍] 警告: Flask 应用实例未注入，跳过数据库写入")
+                else:
+                    with self.app.app_context():
+                        capture = Capture(
+                            camera_id=camera_id,
+                            location=location,
+                            image_path=f"captures/{filename}",
+                            thumbnail_path=f"captures/{filename}",
+                            violation_type=f"{behavior_type}({threat_level})",
+                            threat_level=threat_level,
+                            num_people_involved=num_people,
+                            evidence=evidence,
+                            capture_time=datetime.now()
+                        )
+                        db.session.add(capture)
+                        db.session.commit()
+                        print(f"[VLM 抓拍] 图片已保存: {filename}, 违规类型: {behavior_type}, 威胁等级: {threat_level}")
+            except Exception as e:
+                print(f"[VLM 抓拍] 数据库写入失败: {e}")
+                try:
+                    db.session.rollback()
+                except:
+                    pass
+            
+            try:
+                from exts import socketio
+                socketio.emit('violent_alert', {
+                    'camera_id': camera_id,
+                    'location': location,
+                    'threat_level': threat_level,
+                    'behavior_type': behavior_type,
+                    'num_people_involved': num_people,
+                    'description': description,
+                    'evidence': evidence,
+                    'image_path': f"/static/captures/{filename}",
+                    'capture_time': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                }, namespace='/')
+                print(f"[VLM 警报] 已推送暴力行为告警: 摄像头 {camera_id} @ {location} [{threat_level}]")
+            except Exception as e:
+                print(f"[VLM 警报] SocketIO 推送失败: {e}")
+                
+        except Exception as e:
+            print(f"[VLM 抓拍] 自动抓拍处理异常: {e}")
+
 
 video_inference = VideoInference()
 

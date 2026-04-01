@@ -396,6 +396,90 @@
             }
         });
 
+        socket.on('violent_alert', (data) => {
+            console.log('Violent alert received:', data);
+            showViolentAlertNotification(data);
+        });
+
+        function showViolentAlertNotification(data) {
+            const container = document.getElementById('notification-container');
+            const toast = document.createElement('div');
+            toast.className = 'fade-in mb-3';
+            toast.style.cssText = `
+                background: #fff;
+                border: 2px solid #ef4444;
+                border-radius: var(--radius-md);
+                padding: 15px;
+                box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
+                color: var(--text-primary);
+                overflow: hidden;
+                position: relative;
+                animation: alertPulse 0.5s ease-in-out 3;
+            `;
+
+            toast.innerHTML = `
+                <div class="d-flex align-items-center mb-2">
+                    <div class="rounded-circle bg-danger me-2" style="width: 12px; height: 12px; animation: pulse 0.5s infinite;"></div>
+                    <strong class="me-auto" style="font-size: 0.95rem; color: #ef4444;">⚠️ 检测到暴力行为!</strong>
+                    <small class="text-muted" style="font-size: 0.75rem;">${data.camera_id}</small>
+                    <button type="button" class="btn-close ms-2" style="font-size: 0.6rem;" onclick="this.parentElement.parentElement.remove()"></button>
+                </div>
+                <div class="d-flex gap-3">
+                    <img src="${data.image_path}" class="rounded" style="width: 100px; height: 70px; object-fit: cover; border: 2px solid #ef4444;">
+                    <div>
+                        <div class="fw-bold mb-1" style="font-size: 0.9rem; color: #ef4444;">${data.violation_type}</div>
+                        <div class="small text-muted"><i class="fas fa-map-marker-alt me-1"></i>${data.location}</div>
+                        <div class="small text-muted"><i class="fas fa-clock me-1"></i>${data.capture_time}</div>
+                        <div class="small text-muted" style="color: #6b7280;">${data.description}</div>
+                    </div>
+                </div>
+                <div style="position: absolute; bottom: 0; left: 0; height: 3px; background: #ef4444; width: 100%; animation: progress 8s linear forwards;"></div>
+            `;
+
+            container.appendChild(toast);
+
+            // 播放警报声音
+            playAlertSound();
+
+            // 8秒后自动关闭
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(50px)';
+                toast.style.transition = 'all 0.5s ease';
+                setTimeout(() => toast.remove(), 500);
+            }, 8000);
+        }
+
+        function playAlertSound() {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const totalBeeps = 6;
+                const beepDuration = 0.2;
+                const gapDuration = 0.15;
+
+                for (let i = 0; i < totalBeeps; i++) {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.type = 'square';
+
+                    const startTime = audioCtx.currentTime + i * (beepDuration + gapDuration);
+                    osc.frequency.setValueAtTime(1200, startTime);
+                    osc.frequency.setValueAtTime(800, startTime + beepDuration * 0.5);
+
+                    gain.gain.setValueAtTime(0.8, startTime);
+                    gain.gain.setValueAtTime(0.8, startTime + beepDuration * 0.8);
+                    gain.gain.exponentialRampToValueAtTime(0.01, startTime + beepDuration);
+
+                    osc.start(startTime);
+                    osc.stop(startTime + beepDuration);
+                }
+            } catch (e) {
+                console.log('警报声音播放失败:', e);
+            }
+        }
+
         function showNotification(data) {
             const container = document.getElementById('notification-container');
             const toast = document.createElement('div');
@@ -445,6 +529,10 @@
         @keyframes progress {
             from { width: 100%; }
             to { width: 0%; }
+        }
+        @keyframes alertPulse {
+            0%, 100% { box-shadow: 0 0 20px rgba(239, 68, 68, 0.4); }
+            50% { box-shadow: 0 0 30px rgba(239, 68, 68, 0.8); }
         }
     </style>
     

@@ -253,72 +253,58 @@ def video_stream(camera_id):
         return str(e), 500
 
 
-# 全局管理后台音频进程的字典和锁
-import threading
-import subprocess
-audio_processes = {}
-audio_lock = threading.Lock()
+@settings_bp.route('/api/vlm/status/<camera_id>', methods=['GET'])
+def get_vlm_status(camera_id):
+    """获取特定摄像头的最新 VLM 分析结果"""
+    try:
+        from blueprints.video_inference import video_inference
+        with video_inference.lock:
+            c_data = video_inference.captures.get(camera_id)
+        
+        if not c_data:
+            return jsonify({'active': False}), 200
+        
+        with c_data['lock']:
+            vlm_result = c_data.get('vlm_result')
+            last_vlm_time = c_data.get('last_vlm_time', 0)
+        
+        if not vlm_result or last_vlm_time == 0:
+            return jsonify({'active': False}), 200
+        
+        import time
+        elapsed = time.time() - last_vlm_time
+        
+        return jsonify({
+            'active': True,
+            'result': vlm_result,
+            'timestamp': last_vlm_time,
+            'elapsed': round(elapsed, 1)
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
+
+# 通过 VideoInference 统一全局管理音频进程，防止双重启动
 @settings_bp.route('/api/audio/control/<camera_id>', methods=['POST'])
 def audio_control(camera_id):
-    """音频控制接口：直接在服务器后台调用 ffplay 播放 RTSP 音频"""
+    """前端音频控制接口：只改变后台静音状态标志位，绝不自己启动进程"""
     try:
+        from blueprints.video_inference import video_inference
         data = request.get_json() or {}
         action = data.get('action')
         
-        with audio_lock:
-            # 状态查询
-            if action == 'status':
-                is_playing = camera_id in audio_processes
-                if is_playing:
-                    # 检查进程是否意外死亡
-                    proc = audio_processes[camera_id]
-                    if proc.poll() is not None:
-                        del audio_processes[camera_id]
-                        is_playing = False
-                return jsonify({"playing": is_playing}), 200
+        if action == 'status':
+            is_playing = video_inference.is_audio_playing(camera_id)
+            return jsonify({"playing": is_playing}), 200
 
-            # 停止播放
-            if action == 'stop':
-                proc = audio_processes.pop(camera_id, None)
-                if proc:
-                    proc.kill()
-                    proc.wait()
-                return jsonify({"status": "stopped"}), 200
+        elif action == 'stop':
+            video_inference.set_audio_muted(camera_id, True)
+            return jsonify({"status": "stopped"}), 200
 
-            # 开启播放
-            if action == 'play':
-                if camera_id in audio_processes:
-                    proc = audio_processes[camera_id]
-                    if proc.poll() is None:
-                        return jsonify({"status": "already playing"}), 200
-                    else:
-                        del audio_processes[camera_id]
-
-                from blueprints.mqtt_manager import mqtt_manager
-                if not mqtt_manager or not mqtt_manager.connected:
-                    return jsonify({"error": "MQTT未连接"}), 400
-                    
-                cameras_data = mqtt_manager.latest_jetson_info.get('cameras', [])
-                stream_url = None
-                for cam in cameras_data:
-                    if str(cam.get('id', '')) == str(camera_id):
-                        stream_url = cam.get('voice_rtsp_url')
-                        break
-                
-                if not stream_url:
-                    return jsonify({"error": "未找到声音流地址 (voice_rtsp_url缺失)"}), 404
-                
-                # 核心：使用用户提供的极致低延迟参数，在后台启动 ffplay 进程
-                cmd = [
-                    'ffplay', '-nodisp', '-rtsp_transport', 'tcp', 
-                    '-fflags', 'nobuffer', '-flags', 'low_delay', 
-                    '-framedrop', '-strict', 'experimental', '-i', stream_url
-                ]
-                # 丢弃 stdout/stderr 防止阻塞或刷屏控制台
-                proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                audio_processes[camera_id] = proc
-                return jsonify({"status": "started"}), 200
+        elif action == 'play':
+            video_inference.set_audio_muted(camera_id, False)
+            return jsonify({"status": "play_requested"}), 200
 
         return jsonify({"error": "无效的 action"}), 400
         
@@ -327,63 +313,4 @@ def audio_control(camera_id):
 
 
 
-@settings_bp.route('/api/audio/stream/<camera_id>')
-def audio_stream(camera_id):
-    """音频流代理接口：将 RTSP 实时转码为 MP3 流发给前端"""
-    try:
-        import subprocess
-        from blueprints.mqtt_manager import mqtt_manager
-        
-        if not mqtt_manager or not mqtt_manager.connected:
-            return "MQTT未连接", 400
-            
-        cameras_data = mqtt_manager.latest_jetson_info.get('cameras', [])
-        stream_url = None
-        for cam in cameras_data:
-            if str(cam.get('id', '')) == str(camera_id):
-                stream_url = cam.get('voice_rtsp_url')
-                break
-        
-        if not stream_url:
-            return "未找到声音流地址 (voice_rtsp_url缺失)", 404
-        
-        def generate_audio():
-            # 极致低延迟音频代理参数：
-            # 1. 采用跟 ffplay 相同的输入端无缓冲策略
-            # 2. 弃用高延迟的 MP3 编码，改用无压缩的 PCM (WAV) 格式直接传输
-            # 3. 降低采样率到 16000Hz (足够清晰的人声)，极大减少数据传输量
-            cmd = [
-                'ffmpeg', 
-                '-rtsp_transport', 'tcp', 
-                '-fflags', 'nobuffer', 
-                '-flags', 'low_delay', 
-                '-i', stream_url,
-                '-vn', 
-                '-c:a', 'pcm_s16le', 
-                '-ar', '16000', 
-                '-ac', '1', 
-                '-f', 'wav', 
-                '-'
-            ]
-            # 忽略 stderr 日志输出，防止刷屏
-            process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
-            
-            try:
-                while True:
-                    # 极限微切片：从 4096 降到 512 字节，只要 ffmpeg 吐出一点点声音就立刻塞给浏览器
-                    data = process.stdout.read(512)
-                    if not data:
-                        break
-                    yield data
-            except GeneratorExit:
-                pass
-            finally:
-                process.kill()
-                process.wait()
 
-        # 返回无压缩 WAV 音频流响应
-        from flask import Response
-        return Response(generate_audio(), mimetype='audio/wav')
-        
-    except Exception as e:
-        return str(e), 500

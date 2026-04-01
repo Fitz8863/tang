@@ -36,6 +36,7 @@ app.register_blueprint(user_mgmt_bp)
 if os.environ.get('WERKZEUG_RUN_MAIN') == 'true' or not app.config.get('DEBUG'):
     try:
         from blueprints.video_inference import video_inference
+        video_inference.app = app
         print("[System] 后台视频监控/推理守护进程已成功唤醒（主进程单例）。")
     except Exception as e:
         print(f"[System] 警告：后台视频守护进程启动失败: {e}")
