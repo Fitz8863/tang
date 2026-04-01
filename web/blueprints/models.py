@@ -27,6 +27,9 @@ class Capture(db.Model):
     image_path = db.Column(db.String(255), nullable=False)
     thumbnail_path = db.Column(db.String(255))
     violation_type = db.Column(db.String(100))
+    threat_level = db.Column(db.String(20), default='low')
+    num_people_involved = db.Column(db.Integer, default=0)
+    evidence = db.Column(db.Text)
     capture_time = db.Column(db.DateTime, default=datetime.now, index=True)
 
 class MqttConfig(db.Model):

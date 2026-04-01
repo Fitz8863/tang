@@ -50,8 +50,19 @@ class MQTTManager:
             try:
                 payload = json.loads(msg.payload.decode('utf-8'))
                 
-                # 新格式心跳包没有 device 字段，使用默认设备 ID
-                device_id = payload.get('device', 'RK3588-001')
+                # 读取 config.py 中的白名单配置
+                try:
+                    from config import REGISTERED_DEVICES
+                except ImportError:
+                    REGISTERED_DEVICES = []
+                
+                # 新格式心跳包优先读取 device_id，否则回退读取 device
+                device_id = payload.get('device_id') or payload.get('device', 'unknown')
+                
+                # 核心鉴权拦截：如果不在白名单中，直接丢弃该心跳包，不执行后续任何操作
+                if REGISTERED_DEVICES and (device_id not in REGISTERED_DEVICES):
+                    # print(f"[MQTT 鉴权] 拒绝未登记设备的心跳包接入: {device_id}")
+                    return
                 
                 # 移除不需要的字段
                 if 'timestamp_ns' in payload:

@@ -183,6 +183,9 @@ def list_captures():
             'image_path': c.image_path,
             'thumbnail_path': c.thumbnail_path,
             'violation_type': c.violation_type,
+            'threat_level': c.threat_level or 'low',
+            'num_people_involved': c.num_people_involved or 0,
+            'evidence': c.evidence or '',
             'capture_time': c.capture_time.strftime('%Y-%m-%d %H:%M:%S')
         } for c in captures],
         'pagination': {

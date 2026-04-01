@@ -100,27 +100,19 @@
         opacity: 0.5;
     }
 
-    .refresh-btn {
-        padding: 6px 16px;
-        border-radius: 20px;
-        border: 1px solid var(--primary);
-        background: transparent;
-        color: var(--primary);
-        transition: all 0.3s ease;
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: var(--text-secondary);
     }
 
-    .refresh-btn:hover {
-        background: var(--primary);
-        color: white;
-    }
-    
-    .loading i {
-        animation: spin 1s linear infinite;
-    }
-
-    @keyframes spin {
-        from { transform: rotate(0deg); }
-        to { transform: rotate(360deg); }
+    .empty-state i {
+        font-size: 4rem;
+        margin-bottom: 15px;
+        background: linear-gradient(135deg, var(--primary), var(--accent));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        opacity: 0.5;
     }
 </style>
 {% endblock %}
@@ -132,13 +124,6 @@
     请 <a href="{{ url_for('auth.login') }}" class="fw-bold">登录</a> 后查看抓拍记录
 </div>
 {% else %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    
-    <button class="refresh-btn" onclick="loadCaptures(1)">
-        <i class="fas fa-sync-alt me-1"></i>刷新数据
-    </button>
-</div>
-
 <!-- 筛选栏 -->
 <div class="alerts-container p-3 mb-4">
     <form id="filterForm" class="row g-3 align-items-end">
@@ -175,7 +160,9 @@
             <thead>
                 <tr>
                     <th>预览</th>
+                    <th>威胁等级</th>
                     <th>违规类型</th>
+                    <th>涉及人数</th>
                     <th>抓拍地点</th>
                     <th>摄像头设备 ID</th>
                     <th>抓拍时间</th>
@@ -271,9 +258,6 @@
     }
 
     function loadCaptures(page = 1) {
-        const btn = document.querySelector('.refresh-btn');
-        if (btn) btn.classList.add('loading');
-        
         currentPage = page;
         
         // 构建查询参数
@@ -322,18 +306,30 @@
                         const previewPath = capture.thumbnail_path ? `/static/${capture.thumbnail_path}` : `/static/${capture.image_path}`;
                         const fullPath = `/static/${capture.image_path}`;
                         
+                        const threatLevel = capture.threat_level || 'low';
+                        const threatBadge = threatLevel === 'high' 
+                            ? '<span class="badge" style="background:#ef4444;color:#fff;">高危</span>'
+                            : threatLevel === 'medium' 
+                            ? '<span class="badge" style="background:#f59e0b;color:#fff;">中危</span>'
+                            : '<span class="badge" style="background:#10b981;color:#fff;">低危</span>';
+                        
+                        const numPeople = capture.num_people_involved || 0;
+                        
                         const row = document.createElement('tr');
+                        row.title = capture.evidence ? `视觉证据: ${capture.evidence}` : '';
                         row.innerHTML = `
                             <td>
                                 <img class="preview-img" src="${previewPath}" 
                                      onclick="showImage('${fullPath}')"
                                      onerror="this.src='/static/img/placeholder.png'">
                             </td>
+                            <td>${threatBadge}</td>
                             <td>
                                 <span class="badge badge-danger">
                                     <i class="fas fa-exclamation-triangle me-1"></i>${capture.violation_type || '违规行为'}
                                 </span>
                             </td>
+                            <td><strong>${numPeople}</strong> 人</td>
                             <td class="small">${capture.location}</td>
                             <td><code class="text-info">${capture.camera_id}</code></td>
                             <td class="x-small text-muted">${capture.capture_time}</td>
@@ -347,15 +343,11 @@
                     });
                 }
             })
-            .catch(error => console.error('获取抓拍记录失败:', error))
-            .finally(() => {
-                if (btn) btn.classList.remove('loading');
-            });
+            .catch(error => console.error('获取抓拍记录失败:', error));
     }
 
     // 处理来自 Socket.IO 的实时新捕获事件
     window.onNewCapture = function(data) {
-        // 如果当前正在第一页，且没有活动筛选条件，则刷新列表
         const cameraId = document.getElementById('filterCameraId')?.value || '';
         const locationInput = document.getElementById('filterLocation')?.value || '';
         
@@ -364,6 +356,16 @@
             loadCaptures(1);
         }
     };
+
+    // 监听暴力行为警报，自动刷新抓拍列表
+    document.addEventListener('DOMContentLoaded', function() {
+        if (typeof socket !== 'undefined') {
+            socket.on('violent_alert', function(data) {
+                console.log('Violent alert on alerts page, refreshing...');
+                loadCaptures(1);
+            });
+        }
+    });
 
     function showImage(src) {
         document.getElementById('modalImage').src = src;

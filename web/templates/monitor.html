@@ -5,79 +5,95 @@
 {% block extra_css %}
 <style>
     .monitor-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center; /* 居中显示 */
+        gap: 24px;
+        padding-bottom: 30px;
     }
+    
+    /* 监控卡片 - 自适应主题，限制最大宽度 */
     .monitor-card {
-        background: #1c1917 !important; /* 强制深色 */
-        border: 1px solid #292524 !important;
+        width: 100%;
+        max-width: 800px; /* 限制最大宽度，防止满屏拉伸 */
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
         border-radius: var(--radius-lg);
         overflow: hidden;
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
+        box-shadow: var(--shadow-md);
         transition: all 0.3s ease;
-        color: #fafaf9 !important; /* 强制白色文字 */
+        color: var(--text-main);
     }
     .monitor-card:hover {
         transform: translateY(-4px);
-        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
-        border-color: var(--primary-light) !important;
+        box-shadow: var(--shadow-lg);
+        border-color: var(--primary-light);
     }
+    
+    /* 卡片头部 - 保持品牌渐变色，文字始终为白色 */
     .monitor-header {
         background: linear-gradient(135deg, #c2410c 0%, #9a3412 100%);
-        color: #fafaf9 !important;
+        color: #ffffff;
         padding: 14px 20px;
         display: flex;
         justify-content: space-between;
         align-items: center;
     }
+    
+    /* 摄像头信息栏 - 自适应主题 */
     .camera-info-bar {
-        background: #0c0a09 !important; /* 极夜黑背景 */
-        color: #a8a29e !important;
-        padding: 6px 20px;
-        font-size: 0.8rem;
+        background: var(--bg-color);
+        color: var(--text-muted);
+        padding: 8px 20px;
+        font-size: 0.85rem;
         display: flex;
         justify-content: space-between;
         align-items: center;
-        border-bottom: 1px solid #1c1917 !important;
+        border-bottom: 1px solid var(--border-color);
     }
     .camera-info-bar .resolution {
         display: flex;
         align-items: center;
         gap: 6px;
         font-family: 'Courier New', monospace;
-        color: #fb923c !important;
-        font-weight: 500;
+        color: var(--primary);
+        font-weight: 600;
     }
     .camera-info-bar .resolution i {
-        font-size: 0.75rem;
+        font-size: 0.8rem;
     }
+    
+    /* 视频主体 - 始终保持黑底以凸显视频画面 */
     .monitor-body {
         padding: 0;
-        background: #000 !important;
-        min-height: 350px;
+        background: #000;
+        min-height: 400px; /* 增加一点高度，适应一列布局 */
         position: relative;
     }
     .monitor-body img {
         width: 100%;
-        height: 350px;
+        height: 100%;
+        min-height: 400px;
         object-fit: contain;
-        background: #000 !important;
+        background: #000;
     }
+    
+    /* 底部统计栏 - 自适应主题 */
     .monitor-stats {
+
         display: flex;
         gap: 20px;
         padding: 15px 20px;
-        background: #0c0a09 !important;
-        border-top: 1px solid #1c1917 !important;
-        color: #fafaf9 !important;
+        background: var(--card-bg);
+        border-top: 1px solid var(--border-color);
+        color: var(--text-main);
     }
     .monitor-stats span {
         display: flex;
         align-items: center;
-        gap: 5px;
-        font-size: 0.85rem;
-        color: #a8a29e !important;
+        gap: 6px;
+        font-size: 0.9rem;
+        color: var(--text-muted);
     }
     .empty-state {
         text-align: center;
@@ -126,6 +142,54 @@
         0%, 100% { opacity: 1; }
         50% { opacity: 0.5; }
     }
+    /* VLM 分析结果面板 */
+    .vlm-panel {
+        padding: 12px 16px;
+        border-top: 1px solid var(--border-color);
+        background: var(--card-bg);
+        display: none;
+        transition: all 0.3s ease;
+    }
+    .vlm-panel.visible {
+        display: block;
+    }
+    .vlm-panel .vlm-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 6px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .vlm-panel .vlm-header i {
+        font-size: 0.9rem;
+    }
+    .vlm-panel .vlm-body {
+        font-size: 0.9rem;
+        line-height: 1.5;
+        color: var(--text-muted);
+    }
+    .vlm-panel.vlm-danger {
+        border-left: 4px solid #ef4444;
+    }
+    .vlm-panel.vlm-danger .vlm-header {
+        color: #ef4444;
+    }
+    .vlm-panel.vlm-safe {
+        border-left: 4px solid #10b981;
+    }
+    .vlm-panel.vlm-safe .vlm-header {
+        color: #10b981;
+    }
+    .vlm-panel .vlm-timer {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        text-align: right;
+        margin-top: 4px;
+        opacity: 0.6;
+    }
     {% if not current_user.is_authenticated %}
     .alert-info {
         background: var(--primary-subtle);
@@ -155,9 +219,11 @@
 </div>
 {% else %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <!-- <h4 class="mb-0">
-        <i class="fas fa-video me-2" style="color: var(--primary-light);"></i>实时视频监控
-    </h4> -->
+    <div>
+        <button id="globalAudioToggle" class="btn btn-sm btn-outline-secondary rounded-pill px-3 shadow-sm" onclick="toggleGlobalAudio()" style="background: var(--card-bg); color: var(--text-main); border-color: var(--border-color); transition: all 0.3s ease;">
+            <i class="fas fa-volume-mute me-2" id="audioIcon"></i><span id="audioText">开启现场环境音</span>
+        </button>
+    </div>
 </div>
 
 <div class="monitor-grid" id="monitorGrid">
@@ -181,6 +247,10 @@
         pollInterval = setInterval(syncCameras, 10000);
         updateCameraStats();
         setInterval(updateCameraStats, 3000);
+        setInterval(pollVlmStatus, VLM_POLL_INTERVAL);
+        
+        // 页面加载后延迟获取当前后台音频播放状态
+        setTimeout(checkAudioStatus, 1500);
     });
 
     function updateCameraStats() {
@@ -237,6 +307,12 @@
                     if (!currentIds.has(id)) {
                         card.remove();
                         activeCameras.delete(id);
+                        // 当摄像头离线时，自动停止后台对应的 ffplay 进程
+                        fetch(`/settings/api/audio/control/${id}`, {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({action: 'stop'})
+                        }).catch(() => {});
                     }
                 }
 
@@ -255,6 +331,15 @@
                             const card = createCameraCard(camera.id, camera.name, camera.webrtc_url);
                             monitorGrid.appendChild(card);
                             activeCameras.set(camera.id, card);
+                            
+                            // 尝试为新设备同步开启声音
+                            if (isGlobalAudioEnabled) {
+                                fetch(`/settings/api/audio/control/${camera.id}`, {
+                                    method: 'POST',
+                                    headers: {'Content-Type': 'application/json'},
+                                    body: JSON.stringify({action: 'play'})
+                                }).catch(() => {});
+                            }
                         } else {
                             // 如果信息有变化则更新
                             updateCameraCard(camera.id, camera.name, camera.webrtc_url);
@@ -286,10 +371,6 @@
                 </span>
             </div>
             <div class="monitor-body">
-                <div class="video-overlay" id="overlay-${id}">
-                    <i class="fas fa-circle-notch fa-spin"></i>
-                    <div class="x-small text-primary">正在建立安全视频链路...</div>
-                </div>
                 <img src="/settings/api/video/stream/${id}" data-camera-id="${id}" onerror="handleVideoError('${id}')"></img>
             </div>
             <div class="monitor-stats">
@@ -297,19 +378,16 @@
                     <span><i class="fas fa-video"></i> 远程视频流</span>
                 </div>
             </div>
+            <div class="vlm-panel" id="vlm-panel-${id}">
+                <div class="vlm-header">
+                    <i class="fas fa-robot"></i>
+                    <span class="vlm-status-text">AI 行为分析</span>
+                </div>
+                <div class="vlm-body" id="vlm-body-${id}"></div>
+            </div>
         `;
         
-        // MJPEG流可能不触发onload，延迟1.5秒自动隐藏加载遮罩
-        setTimeout(() => hideOverlay(id), 1500);
-        
         return card;
-    }
-
-    function hideOverlay(id) {
-        const overlay = document.getElementById(`overlay-${id}`);
-        if (overlay) {
-            overlay.classList.add('hidden');
-        }
     }
     
     function handleVideoError(id) {
@@ -326,8 +404,118 @@
         }
     }
 
+    // --- VLM 分析结果面板管理 ---
+    const VLM_POLL_INTERVAL = 2000;  // 2秒轮询一次
+    const VLM_AUTO_HIDE_TIMEOUT = 12; // 超过12秒无更新则隐藏面板
+
+    function pollVlmStatus() {
+        activeCameras.forEach((_, id) => {
+            fetch(`/settings/api/vlm/status/${id}`)
+                .then(res => res.json())
+                .then(data => {
+                    const panel = document.getElementById(`vlm-panel-${id}`);
+                    const body = document.getElementById(`vlm-body-${id}`);
+                    
+                    if (!panel || !body) return;
+
+                    if (data.active && data.result) {
+                        const isViolent = data.result.is_violent || false;
+                        const desc = data.result.description || '暂无描述';
+                        const threatLevel = data.result.threat_level || 'low';
+                        const numPeople = data.result.num_people_involved || 0;
+                        const evidence = data.result.evidence || '';
+
+                        panel.className = `vlm-panel visible ${isViolent ? 'vlm-danger' : 'vlm-safe'}`;
+                        
+                        const icon = isViolent ? '⚠️' : '✅';
+                        const statusText = isViolent ? '检测到异常行为!' : '画面正常';
+                        const threatBadge = isViolent 
+                            ? `<span style="font-size:0.75rem;padding:2px 8px;border-radius:10px;background:#ef4444;color:#fff;">${threatLevel === 'high' ? '高危' : threatLevel === 'medium' ? '中危' : '低危'}</span>`
+                            : `<span style="font-size:0.75rem;padding:2px 8px;border-radius:10px;background:#10b981;color:#fff;">安全</span>`;
+                        
+                        body.innerHTML = `
+                            <div class="d-flex justify-content-between align-items-start mb-1">
+                                <span>${icon} <strong>${statusText}</strong></span>
+                                ${threatBadge}
+                            </div>
+                            <div style="font-size:0.85rem;color:var(--text-muted);margin-bottom:4px;">${desc}</div>
+                            ${numPeople > 0 ? `<div style="font-size:0.8rem;color:var(--text-muted);">涉及人数: <strong>${numPeople}</strong></div>` : ''}
+                            ${evidence ? `<div style="font-size:0.75rem;color:var(--text-muted);margin-top:4px;opacity:0.7;">证据: ${evidence}</div>` : ''}
+                        `;
+                        
+                        const elapsed = data.elapsed || 0;
+                        if (elapsed > VLM_AUTO_HIDE_TIMEOUT) {
+                            panel.classList.remove('visible');
+                        }
+                    } else {
+                        panel.classList.remove('visible');
+                    }
+                })
+                .catch(() => {});
+        });
+    }
+
+    // --- 音频流管理逻辑 (服务器端直出方案) ---
+    let isGlobalAudioEnabled = false;
+
+    // 定期检查服务器后台音频播放状态，保持 UI 同步
+    function checkAudioStatus() {
+        if (activeCameras.size === 0) return;
+        
+        // 假设只对第一个激活的摄像头做状态同步（如果是多路可进一步扩展）
+        const firstCameraId = activeCameras.keys().next().value;
+        
+        fetch(`/settings/api/audio/control/${firstCameraId}`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({action: 'status'})
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.playing !== isGlobalAudioEnabled) {
+                isGlobalAudioEnabled = data.playing;
+                updateAudioBtnUI();
+            }
+        })
+        .catch(() => {});
+    }
+
+    function toggleGlobalAudio() {
+        isGlobalAudioEnabled = !isGlobalAudioEnabled;
+        updateAudioBtnUI();
+        
+        const action = isGlobalAudioEnabled ? 'play' : 'stop';
+        
+        activeCameras.forEach((_, id) => {
+            fetch(`/settings/api/audio/control/${id}`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({action: action})
+            }).catch(e => console.error('音频控制失败:', e));
+        });
+    }
+
+    function updateAudioBtnUI() {
+        const icon = document.getElementById('audioIcon');
+        const text = document.getElementById('audioText');
+        const btn = document.getElementById('globalAudioToggle');
+
+        if (isGlobalAudioEnabled) {
+            icon.className = 'fas fa-volume-up text-success';
+            text.innerText = '正在监听环境音';
+            btn.style.borderColor = 'var(--success)';
+            btn.style.color = 'var(--success)';
+        } else {
+            icon.className = 'fas fa-volume-mute';
+            text.innerText = '开启现场环境音';
+            btn.style.borderColor = 'var(--border-color)';
+            btn.style.color = 'var(--text-main)';
+        }
+    }
+
     window.onbeforeunload = function() {
         if (pollInterval) clearInterval(pollInterval);
+        // 注意：不在这里调用 stop，保证服务器后台一直播放，直到手动关闭
     };
 </script>
 {% endblock %}
