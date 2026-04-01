@@ -1,4 +1,5 @@
 #include "capture_thread.h"
+#include "global_running.h"
 #include <opencv2/opencv.hpp>
 #include <iostream>
 #include <chrono>
@@ -79,7 +80,7 @@ void CaptureThread::Run() {
     float current_fps = 0.0f;
     
     cv::Mat frame;
-    while (running_ && status_.running.load()) {
+    while (running_ && status_.running.load() && g_running) {
         cap >> frame;
         
         if (frame.empty()) {

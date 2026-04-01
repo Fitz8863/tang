@@ -21,6 +21,7 @@ private:
     std::thread thread_;
     std::string rtsp_url_;
     bool running_;
+    FILE* pipe_;
 };
 
 #endif

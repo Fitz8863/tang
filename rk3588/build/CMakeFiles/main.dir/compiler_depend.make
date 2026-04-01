@@ -567,6 +567,7 @@ CMakeFiles/main.dir/src/capture_thread.cc.o: ../src/capture_thread.cc \
   /usr/include/c++/11/stdexcept \
   /usr/include/c++/11/bits/std_mutex.h \
   /usr/include/c++/11/bits/unique_lock.h \
+  ../src/global_running.h \
   /usr/include/opencv4/opencv2/opencv.hpp \
   /usr/include/opencv4/opencv2/opencv_modules.hpp \
   /usr/include/opencv4/opencv2/core.hpp \
@@ -2005,6 +2006,8 @@ CMakeFiles/main.dir/src/voice_capture_thread.cc.o: ../src/voice_capture_thread.c
 
 /usr/include/c++/11/bits/specfun.h:
 
+/usr/include/aarch64-linux-gnu/bits/mathcalls-narrow.h:
+
 /usr/include/aarch64-linux-gnu/bits/iscanonical.h:
 
 /usr/include/c++/11/exception:
@@ -2577,10 +2580,6 @@ CMakeFiles/main.dir/src/voice_capture_thread.cc.o: ../src/voice_capture_thread.c
 
 /usr/include/aarch64-linux-gnu/bits/waitstatus.h:
 
-../src/global_running.h:
-
-/usr/include/aarch64-linux-gnu/bits/uintn-identity.h:
-
 /usr/local/include/mqtt/async_client.h:
 
 /usr/include/aarch64-linux-gnu/bits/sigevent-consts.h:
@@ -2653,6 +2652,12 @@ CMakeFiles/main.dir/src/voice_capture_thread.cc.o: ../src/voice_capture_thread.c
 
 ../src/voice_capture_thread.h:
 
+/usr/include/aarch64-linux-gnu/bits/uintn-identity.h:
+
+../src/global_running.h:
+
+/usr/include/c++/11/bits/hashtable_policy.h:
+
 /usr/include/opencv4/opencv2/opencv.hpp:
 
 /usr/include/aarch64-linux-gnu/c++/11/bits/gthr.h:
@@ -2707,8 +2712,6 @@ CMakeFiles/main.dir/src/voice_capture_thread.cc.o: ../src/voice_capture_thread.c
 
 /usr/include/c++/11/pstl/glue_algorithm_defs.h:
 
-/usr/include/c++/11/bits/hashtable_policy.h:
-
 /usr/include/c++/11/bits/codecvt.h:
 
 /usr/include/opencv4/opencv2/flann/kmeans_index.h:
@@ -2748,5 +2751,3 @@ CMakeFiles/main.dir/src/voice_capture_thread.cc.o: ../src/voice_capture_thread.c
 /usr/include/aarch64-linux-gnu/bits/types/FILE.h:
 
 /usr/include/aarch64-linux-gnu/bits/fp-fast.h:
-
-/usr/include/aarch64-linux-gnu/bits/mathcalls-narrow.h:
