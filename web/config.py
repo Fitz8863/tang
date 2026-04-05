@@ -36,7 +36,11 @@ YOLO_CONF_THRESHOLD = 0.65
 YOLO_IOU_THRESHOLD = 0.45
 YOLO_DEVICE = 'cpu'
 YOLO_IMG_SIZE = 640
-YOLO_QUEUE_SIZE = 4  # 推理队列深度，1为极致实时，增加可提高流畅度但会增加延迟
+YOLO_QUEUE_SIZE = 1  # 推理队列深度，1为极致实时，增加可提高流畅度但会增加延迟
+
+# 帧差检测配置
+FRAME_DIFF_PERCENT = 0.10  # 帧差百分比阈值：差异像素占比低于此值(5%)视为画面静止，跳过YOLO推理
+FRAME_CHECK_INTERVAL = 2   # 帧差检测频率：每处理多少帧才做一次帧差对比(1=逐帧检测)
 
 # 多模态大模型 (VLM) 暴力行为分析配置
 VLM_ENABLED = True  # 默认为 False，你可以手动改为 True 开启大模型联动分析
@@ -45,8 +49,8 @@ VLM_API_BASE = 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completio
 VLM_API_KEY = 'sk-41fd6c7956c1414ba4c1662cb07ad846'  # OpenAI 等云端大模型需要的 API Key，Ollama 本地部署可留空
 VLM_MODEL_NAME = 'qwen2.5-vl-72b-instruct'
 # VLM_MODEL_NAME = 'llama3.2-vision:11b'  # 模型名称，如 ollama 的 'llava', 'qwen2-vl'，或 openai 的 'gpt-4o'
-VLM_FRAME_SKIP = 30  # 抽帧间隔：每处理多少帧才评估一次是否交给大模型(约等于1-2秒)，过滤闪现残影
-VLM_ANALYZE_INTERVAL = 4.0  # 分析冷却时间(秒)。为防止API被请求淹没，只有画面中检测到人且超过冷却时间才分析一次
+VLM_FRAME_SKIP = 20  # 抽帧间隔：每处理多少帧才评估一次是否交给大模型(约等于1-2秒)，过滤闪现残影
+VLM_ANALYZE_INTERVAL = 3.0  # 分析冷却时间(秒)。为防止API被请求淹没，只有画面中检测到人且超过冷却时间才分析一次
 VLM_PROMPT = """你是一个专业的校园安防监控行为分析专家，专门负责识别潜在暴力事件。
 请仔细观察图片中的人物动作、姿势、物体和相互关系，重点关注以下情况：
 - 打架斗殴：推搡、拳打脚踢、拉扯、摔倒、群体围殴等明显攻击性动作（注意区分与普通玩闹的区别）

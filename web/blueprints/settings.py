@@ -236,14 +236,25 @@ def video_stream(camera_id):
         video_inference.get_or_create_capture(camera_id, stream_url)
         
         def generate():
+            import time
+            frame_count = 0
+            fps_start = time.time()
+            last_frame = None
             while True:
-                frame = video_inference.get_frame(camera_id)
-                if frame:
-                    yield (b'--frame\r\n'
-                           b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+                frame_data = video_inference.get_frame(camera_id)
+                if frame_data:
+                    if frame_data != last_frame:
+                        last_frame = frame_data
+                        frame_count += 1
+                        elapsed = time.time() - fps_start
+                        if elapsed >= 1.0:
+                            frame_count = 0
+                            fps_start = time.time()
+                        yield (b'--frame\r\n'
+                               b'Content-Type: image/jpeg\r\n\r\n' + frame_data + b'\r\n')
+                    time.sleep(1.0 / 30.0)
                 else:
-                    import time
-                    time.sleep(0.03)  # ~30fps
+                    time.sleep(1.0 / 30.0)
         
         response = make_response(generate())
         response.headers['Content-Type'] = 'multipart/x-mixed-replace; boundary=frame'
