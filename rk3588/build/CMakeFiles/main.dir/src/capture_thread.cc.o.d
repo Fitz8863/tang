@@ -147,6 +147,7 @@ CMakeFiles/main.dir/src/capture_thread.cc.o: \
  /usr/include/aarch64-linux-gnu/c++/11/bits/error_constants.h \
  /usr/include/c++/11/stdexcept /usr/include/c++/11/bits/std_mutex.h \
  /usr/include/c++/11/bits/unique_lock.h \
+ /home/orangepi/projects/tang/rk3588/src/global_running.h \
  /usr/include/opencv4/opencv2/opencv.hpp \
  /usr/include/opencv4/opencv2/opencv_modules.hpp \
  /usr/include/opencv4/opencv2/core.hpp \
