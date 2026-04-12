@@ -49,7 +49,7 @@ VLM_API_BASE = 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completio
 VLM_API_KEY = 'sk-41fd6c7956c1414ba4c1662cb07ad846'  # OpenAI 等云端大模型需要的 API Key，Ollama 本地部署可留空
 VLM_MODEL_NAME = 'qwen2.5-vl-72b-instruct'
 # VLM_MODEL_NAME = 'llama3.2-vision:11b'  # 模型名称，如 ollama 的 'llava', 'qwen2-vl'，或 openai 的 'gpt-4o'
-VLM_FRAME_SKIP = 20  # 抽帧间隔：每处理多少帧才评估一次是否交给大模型(约等于1-2秒)，过滤闪现残影
+VLM_FRAME_SKIP = 10  # 抽帧间隔：每处理多少帧才评估一次是否交给大模型(约等于1-2秒)，过滤闪现残影
 VLM_ANALYZE_INTERVAL = 3.0  # 分析冷却时间(秒)。为防止API被请求淹没，只有画面中检测到人且超过冷却时间才分析一次
 VLM_PROMPT = """你是一个专业的校园安防监控行为分析专家，专门负责识别潜在暴力事件。
 请仔细观察图片中的人物动作、姿势、物体和相互关系，重点关注以下情况：
