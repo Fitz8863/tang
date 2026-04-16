@@ -89,45 +89,49 @@ class VideoInference:
         while self.running:
             time.sleep(3.0)
             try:
-                from blueprints.mqtt_manager import mqtt_manager
-                if not mqtt_manager or not mqtt_manager.connected or not mqtt_manager.latest_jetson_info:
-                    continue
-                    
-                active_cameras = mqtt_manager.latest_jetson_info.get('cameras', [])
                 active_ids = set()
                 
-                # 1. 自动为所有在线设备建连并拉流
-                for cam in active_cameras:
-                    cam_id = str(cam.get('id', ''))
-                    if not cam_id: continue
-                    active_ids.add(cam_id)
+                config_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'cameras.json')
+                if os.path.exists(config_path):
+                    try:
+                        with open(config_path, 'r', encoding='utf-8') as f:
+                            static_config = json.load(f)
+                            for cam in static_config.get('cameras', []):
+                                active_ids.add(str(cam['id']))
+                    except Exception:
+                        pass
+
+                from blueprints.mqtt_manager import mqtt_manager
+                if mqtt_manager and mqtt_manager.connected and mqtt_manager.latest_jetson_info:
+                    active_cameras = mqtt_manager.latest_jetson_info.get('cameras', [])
                     
-                    loc = cam.get('location', '未知位置')
-                    if self.camera_locations.get(cam_id) != loc:
-                        self.camera_locations[cam_id] = loc
-                    
-                    # --- 视频拉流自动启动 ---
-                    video_url = cam.get('rtsp_url') or cam.get('http_url')
-                    if video_url:
-                        self.get_or_create_capture(cam_id, video_url)
+                    for cam in active_cameras:
+                        cam_id = str(cam.get('id', ''))
+                        if not cam_id: continue
+                        active_ids.add(cam_id)
                         
-                    # --- 音频拉流自动启动 ---
-                    audio_url = cam.get('voice_rtsp_url')
-                    if audio_url and cam_id not in self.muted_cameras:
-                        self.get_or_create_audio(cam_id, audio_url)
+                        loc = cam.get('location', '未知位置')
+                        if self.camera_locations.get(cam_id) != loc:
+                            self.camera_locations[cam_id] = loc
                         
-                # 2. 清理已经离线（不在心跳包中）的设备资源
+                        video_url = cam.get('rtsp_url') or cam.get('http_url')
+                        if video_url:
+                            self.get_or_create_capture(cam_id, video_url)
+                            
+                        audio_url = cam.get('voice_rtsp_url')
+                        if audio_url and cam_id not in self.muted_cameras:
+                            self.get_or_create_audio(cam_id, audio_url)
+                            
                 with self.lock:
                     cameras_to_stop = [cid for cid in self.captures.keys() if cid not in active_ids]
-                    # 还需要检查音频进程是否有多余的
                     audio_to_stop = [cid for cid in self.audio_processes.keys() if cid not in active_ids]
                     
                 for cid in cameras_to_stop:
-                    print(f"[VideoInference] 摄像头 {cid} 心跳丢失，自动停止视频推理资源")
+                    print(f"[VideoInference] 设备 {cid} 离线，自动停止视频推理资源")
                     self.stop_capture(cid)
                     
                 for cid in audio_to_stop:
-                    print(f"[AudioInference] 摄像头 {cid} 心跳丢失，自动停止音频资源")
+                    print(f"[AudioInference] 设备 {cid} 离线，自动停止音频资源")
                     self.stop_audio(cid)
                     
             except Exception as e:
@@ -236,9 +240,26 @@ class VideoInference:
     def get_or_create_capture(self, camera_id, stream_url):
         with self.lock:
             if camera_id not in self.captures:
-                # 初始化三级流水线队列 (从 config 读取深度)
+                fps = 30.0
+                location = '未知位置'
+                config_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'cameras.json')
+                if os.path.exists(config_path):
+                    try:
+                        with open(config_path, 'r', encoding='utf-8') as f:
+                            config = json.load(f)
+                            for cam in config.get('cameras', []):
+                                if str(cam.get('id')) == str(camera_id):
+                                    fps = float(cam.get('fps', 30.0))
+                                    location = cam.get('location', '未知位置')
+                                    self.camera_locations[str(camera_id)] = location
+                                    break
+                    except Exception:
+                        pass
+
                 self.captures[camera_id] = {
                     'url': stream_url,
+                    'fps': fps,
+                    'location': location,
                     'raw_queue': Queue(maxsize=int(YOLO_QUEUE_SIZE)),
                     'latest_jpeg': None,
                     'last_vlm_time': 0,
@@ -277,22 +298,43 @@ class VideoInference:
         print(f"[Capture] 启动拉流线程: {camera_id}")
         
         os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp|fflags;nobuffer|flags;low_delay|probesize;32|analyzeduration;0|framedrop;1"
-        cap = cv2.VideoCapture(url, cv2.CAP_FFMPEG)
+        
+        # 判断是否为本地文件或摄像头设备名
+        is_local = not (url.startswith('rtsp://') or url.startswith('rtmp://') or url.startswith('http://'))
+        
+        if is_local:
+            cap = cv2.VideoCapture(url)
+        else:
+            cap = cv2.VideoCapture(url, cv2.CAP_FFMPEG)
         
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, int(YOLO_IMG_SIZE))
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, int(YOLO_IMG_SIZE * 0.75))
         cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
         
         while not c_data['stop_event'].is_set():
+            start_time = time.time()
             ret, frame = cap.read()
             if not ret:
+                if is_local:
+                    cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+                    ret, frame = cap.read()
+                    if ret:
+                        try:
+                            while c_data['raw_queue'].full():
+                                c_data['raw_queue'].get_nowait()
+                            c_data['raw_queue'].put_nowait(frame)
+                        except Exception:
+                            pass
+                        continue
+                
                 time.sleep(0.01)
                 if not cap.isOpened():
                     cap.release()
-                    cap = cv2.VideoCapture(url, cv2.CAP_FFMPEG)
-                    cap.set(cv2.CAP_PROP_FRAME_WIDTH, int(YOLO_IMG_SIZE))
-                    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, int(YOLO_IMG_SIZE * 0.75))
-                    cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+                    cap = cv2.VideoCapture(url) if is_local else cv2.VideoCapture(url, cv2.CAP_FFMPEG)
+                    if not is_local:
+                        cap.set(cv2.CAP_PROP_FRAME_WIDTH, int(YOLO_IMG_SIZE))
+                        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, int(YOLO_IMG_SIZE * 0.75))
+                        cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
                 continue
             
             try:
@@ -301,6 +343,13 @@ class VideoInference:
                 c_data['raw_queue'].put_nowait(frame)
             except Exception:
                 pass
+            
+            if is_local:
+                elapsed = time.time() - start_time
+                target_fps = c_data.get('fps', 30.0)
+                wait_time = (1.0 / target_fps) - elapsed
+                if wait_time > 0:
+                    time.sleep(wait_time)
         
         cap.release()
         print(f"[Capture] 停止拉流线程: {camera_id}")

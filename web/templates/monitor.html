@@ -288,14 +288,14 @@
                     intercomBar.style.display = mqttConnected ? 'flex' : 'none';
                 }
                 
-                if (!mqttConnected) {
-                    // MQTT未连接状态
+                // 修改逻辑：只有当 MQTT 未连接且没有任何摄像头（包括静态源）时才显示“请先连接服务器”
+                if (!mqttConnected && cameras.length === 0) {
+                    // MQTT未连接且无本地源状态
                     activeCameras.forEach(card => card.remove());
                     activeCameras.clear();
                     emptyState.style.display = 'block';
                     emptyState.querySelector('i').className = 'fas fa-server';
                     emptyStateTitle.innerText = '请先连接服务器';
-                    // emptyStateDesc.innerText = '前往“系统设置”连接远程服务器以获取实时监控';
                     return;
                 }
 

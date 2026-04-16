@@ -21,7 +21,7 @@
     .table td {
         padding: 14px 20px;
         border-bottom: 1px solid var(--border-light);
-        background: transparent !important;
+        background: inherit !important;
         color: var(--text-primary) !important;
     }
 
@@ -41,8 +41,9 @@
     }
 
     .table tbody tr {
-        background: #fff !important;
+        background: var(--bg-card) !important;
         transition: all 0.2s ease;
+        border-color: var(--border-light);
     }
 
     .table tbody tr:hover {
@@ -127,23 +128,15 @@
 <!-- 筛选栏 -->
 <div class="alerts-container p-3 mb-4">
     <form id="filterForm" class="row g-3 align-items-end">
-        <div class="col-md-2">
+        <div class="col-md-4">
             <label class="form-label x-small text-muted">摄像头 ID</label>
             <input type="text" class="form-control form-control-sm" id="filterCameraId" placeholder="搜索 ID...">
         </div>
-        <div class="col-md-2">
+        <div class="col-md-4">
             <label class="form-label x-small text-muted">拍摄地点</label>
             <input type="text" class="form-control form-control-sm" id="filterLocation" placeholder="搜索地点...">
         </div>
-        <div class="col-md-3">
-            <label class="form-label x-small text-muted">起始时间</label>
-            <input type="datetime-local" class="form-control form-control-sm" id="filterStartTime">
-        </div>
-        <div class="col-md-3">
-            <label class="form-label x-small text-muted">截止时间</label>
-            <input type="datetime-local" class="form-control form-control-sm" id="filterEndTime">
-        </div>
-        <div class="col-md-2 d-flex gap-2">
+        <div class="col-md-4 d-flex gap-2">
             <button type="button" class="btn btn-sm btn-primary flex-grow-1" onclick="loadCaptures(1)">
                 <i class="fas fa-search me-1"></i>筛选
             </button>

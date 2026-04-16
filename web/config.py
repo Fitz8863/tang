@@ -32,11 +32,11 @@ REGISTERED_DEVICES = [
 
 # YOLO 推理配置
 YOLO_MODEL_PATH = 'model/yolo26n.onnx'
-YOLO_CONF_THRESHOLD = 0.65
+YOLO_CONF_THRESHOLD = 0.4
 YOLO_IOU_THRESHOLD = 0.45
 YOLO_DEVICE = 'cpu'
 YOLO_IMG_SIZE = 640
-YOLO_QUEUE_SIZE = 1  # 推理队列深度，1为极致实时，增加可提高流畅度但会增加延迟
+YOLO_QUEUE_SIZE = 2  # 推理队列深度，1为极致实时，增加可提高流畅度但会增加延迟
 
 # 帧差检测配置
 FRAME_DIFF_PERCENT = 0.10  # 帧差百分比阈值：差异像素占比低于此值(5%)视为画面静止，跳过YOLO推理
@@ -62,7 +62,7 @@ VLM_PROMPT = """你是一个专业的校园安防监控行为分析专家，专�
 {
   "is_violent": true/false,
   "threat_level": "low/medium/high",
-  "behavior_type": "fighting/holding_weapon/pushing/gathering/chasing/normal/other",
+  "behavior_type": "打架 / 手持武器 / 推搡 / 聚集 / 追逐 / 正常 / 其他",
   "description": "用中文简洁描述主要人物的动作、位置和关键视觉证据，例如：'画面左侧两名学生互相拳击，一人手持疑似刀具'",
   "num_people_involved": 整数,
   "evidence": "列出支持判断的关键视觉线索，用简短中文描述"
