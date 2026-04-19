@@ -215,35 +215,46 @@ def video_stream(camera_id):
         from blueprints.mqtt_manager import mqtt_manager
         from blueprints.video_inference import video_inference
         
-        if not mqtt_manager or not mqtt_manager.connected:
-            return "MQTT未连接", 400
-            
-        if not mqtt_manager.latest_jetson_info:
-            return "等待摄像头数据...", 400
-        
-        # 优先从心跳数据中查找对应camera_id的RTSP流地址，如果没有则退而求其次使用http流
-        cameras_data = mqtt_manager.latest_jetson_info.get('cameras', [])
         stream_url = None
-        for cam in cameras_data:
-            if str(cam.get('id', '')) == str(camera_id):
-                stream_url = cam.get('rtsp_url') or cam.get('http_url', '')
-                break
+        
+        if mqtt_manager and mqtt_manager.connected and mqtt_manager.latest_jetson_info:
+            cameras_data = mqtt_manager.latest_jetson_info.get('cameras', [])
+            for cam in cameras_data:
+                if str(cam.get('id', '')) == str(camera_id):
+                    stream_url = cam.get('rtsp_url') or cam.get('http_url', '')
+                    break
         
         if not stream_url:
-            return f"未找到摄像头 {camera_id} 的流地址", 404
+            config_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'cameras.json')
+            if os.path.exists(config_path):
+                try:
+                    with open(config_path, 'r', encoding='utf-8') as f:
+                        config = json.load(f)
+                        for cam in config.get('cameras', []):
+                            if str(cam.get('id', '')) == str(camera_id):
+                                stream_url = cam.get('source')
+                                break
+                except Exception:
+                    pass
         
-        # 获取或创建视频捕获
+        if not stream_url:
+            return f"无法定位摄像头 {camera_id} 的有效视频源", 404
+        
         video_inference.get_or_create_capture(camera_id, stream_url)
         
         def generate():
+            import time
+            last_frame = None
             while True:
-                frame = video_inference.get_frame(camera_id)
-                if frame:
-                    yield (b'--frame\r\n'
-                           b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+                frame_data = video_inference.get_frame(camera_id)
+                if frame_data:
+                    if frame_data != last_frame:
+                        last_frame = frame_data
+                        yield (b'--frame\r\n'
+                               b'Content-Type: image/jpeg\r\n\r\n' + frame_data + b'\r\n')
+                    time.sleep(1.0 / 30.0)
                 else:
-                    import time
-                    time.sleep(0.03)  # ~30fps
+                    time.sleep(1.0 / 30.0)
         
         response = make_response(generate())
         response.headers['Content-Type'] = 'multipart/x-mixed-replace; boundary=frame'

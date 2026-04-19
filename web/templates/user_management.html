@@ -110,7 +110,7 @@
                                         {% if user.role == 'admin' %}
                                             <span class="badge bg-danger">超级管理员</span>
                                         {% elif user.role == 'assistant' %}
-                                            <span class="badge bg-warning">辅助管理员</span>
+                                            <span class="badge bg-warning">校园管理员</span>
                                         {% else %}
                                             <span class="badge bg-secondary">游客</span>
                                         {% endif %}
@@ -157,7 +157,7 @@
                     <label class="form-label">身份角色</label>
                     <select id="add_role" class="form-select">
                         <option value="user">游客</option>
-                        <option value="assistant">辅助管理员</option>
+                        <option value="assistant">校园管理员</option>
                     </select>
                 </div>
             </div>
@@ -191,7 +191,7 @@
                     <label class="form-label">身份角色</label>
                     <select id="edit_role" class="form-select">
                         <option value="user">游客</option>
-                        <option value="assistant">辅助管理员</option>
+                        <option value="assistant">校园管理员</option>
                     </select>
                 </div>
             </div>

@@ -8,6 +8,8 @@ import subprocess
 import requests
 import base64
 import json
+import uuid
+from datetime import datetime
 from collections import defaultdict
 from queue import Queue, Empty, Full
 
@@ -20,6 +22,8 @@ try:
         YOLO_DEVICE, 
         YOLO_IMG_SIZE,
         YOLO_QUEUE_SIZE,
+        FRAME_DIFF_PERCENT,
+        FRAME_CHECK_INTERVAL,
         VLM_ENABLED,
         VLM_BACKEND,
         VLM_API_BASE,
@@ -36,6 +40,8 @@ except ImportError:
     YOLO_DEVICE = 'cpu'
     YOLO_IMG_SIZE = 640
     YOLO_QUEUE_SIZE = 1
+    FRAME_DIFF_PERCENT = 0.05
+    FRAME_CHECK_INTERVAL = 3
     VLM_ENABLED = False
     VLM_BACKEND = 'ollama'
     VLM_API_BASE = 'http://localhost:11434/api/chat'
@@ -62,15 +68,16 @@ class VideoInference:
         self.app = None
         self.model = None
         self.model_path = model_path
+        self.model_type = 'pytorch'
         self.captures = {}
-        # 管理全局 ffmpeg 音频进程
         self.audio_processes = {}
-        # 记录前端通过按键主动停止（静音）的摄像头ID
         self.muted_cameras = set()
         self.lock = threading.Lock()
-        # 增加一个专门用于启动音频的锁，防止并发瞬间启动两次
         self.audio_start_lock = threading.Lock()
+        self.vlm_active_threads = 0
+        self.vlm_thread_lock = threading.Lock()
         self.fps_stats = defaultdict(lambda: {"count": 0, "start_time": time.time(), "display": 0})
+        self.camera_locations = {}
         
         self.running = True
         daemon_thread = threading.Thread(target=self._daemon_sync_loop, daemon=True)
@@ -82,41 +89,49 @@ class VideoInference:
         while self.running:
             time.sleep(3.0)
             try:
-                from blueprints.mqtt_manager import mqtt_manager
-                if not mqtt_manager or not mqtt_manager.connected or not mqtt_manager.latest_jetson_info:
-                    continue
-                    
-                active_cameras = mqtt_manager.latest_jetson_info.get('cameras', [])
                 active_ids = set()
                 
-                # 1. 自动为所有在线设备建连并拉流（如果已连接且URL没变，get_or_create会忽略）
-                for cam in active_cameras:
-                    cam_id = str(cam.get('id', ''))
-                    if not cam_id: continue
-                    active_ids.add(cam_id)
+                config_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'cameras.json')
+                if os.path.exists(config_path):
+                    try:
+                        with open(config_path, 'r', encoding='utf-8') as f:
+                            static_config = json.load(f)
+                            for cam in static_config.get('cameras', []):
+                                active_ids.add(str(cam['id']))
+                    except Exception:
+                        pass
+
+                from blueprints.mqtt_manager import mqtt_manager
+                if mqtt_manager and mqtt_manager.connected and mqtt_manager.latest_jetson_info:
+                    active_cameras = mqtt_manager.latest_jetson_info.get('cameras', [])
                     
-                    # --- 视频拉流自动启动 ---
-                    video_url = cam.get('rtsp_url') or cam.get('http_url')
-                    if video_url:
-                        self.get_or_create_capture(cam_id, video_url)
+                    for cam in active_cameras:
+                        cam_id = str(cam.get('id', ''))
+                        if not cam_id: continue
+                        active_ids.add(cam_id)
                         
-                    # --- 音频拉流自动启动 ---
-                    audio_url = cam.get('voice_rtsp_url')
-                    if audio_url and cam_id not in self.muted_cameras:
-                        self.get_or_create_audio(cam_id, audio_url)
+                        loc = cam.get('location', '未知位置')
+                        if self.camera_locations.get(cam_id) != loc:
+                            self.camera_locations[cam_id] = loc
                         
-                # 2. 清理已经离线（不在心跳包中）的设备资源
+                        video_url = cam.get('rtsp_url') or cam.get('http_url')
+                        if video_url:
+                            self.get_or_create_capture(cam_id, video_url)
+                            
+                        audio_url = cam.get('voice_rtsp_url')
+                        if audio_url and cam_id not in self.muted_cameras:
+                            self.get_or_create_audio(cam_id, audio_url)
+                            
                 with self.lock:
                     cameras_to_stop = [cid for cid in self.captures.keys() if cid not in active_ids]
-                    # 还需要检查音频进程是否有多余的
                     audio_to_stop = [cid for cid in self.audio_processes.keys() if cid not in active_ids]
                     
                 for cid in cameras_to_stop:
-                    print(f"[VideoInference] 摄像头 {cid} 心跳丢失，自动停止视频推理资源")
+                    print(f"[VideoInference] 设备 {cid} 离线，自动停止视频推理资源")
                     self.stop_capture(cid)
                     
                 for cid in audio_to_stop:
-                    print(f"[AudioInference] 摄像头 {cid} 心跳丢失，自动停止音频资源")
+                    print(f"[AudioInference] 设备 {cid} 离线，自动停止音频资源")
                     self.stop_audio(cid)
                     
             except Exception as e:
@@ -225,14 +240,35 @@ class VideoInference:
     def get_or_create_capture(self, camera_id, stream_url):
         with self.lock:
             if camera_id not in self.captures:
-                # 初始化三级流水线队列 (从 config 读取深度)
+                fps = 30.0
+                location = '未知位置'
+                config_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'cameras.json')
+                if os.path.exists(config_path):
+                    try:
+                        with open(config_path, 'r', encoding='utf-8') as f:
+                            config = json.load(f)
+                            for cam in config.get('cameras', []):
+                                if str(cam.get('id')) == str(camera_id):
+                                    fps = float(cam.get('fps', 30.0))
+                                    location = cam.get('location', '未知位置')
+                                    self.camera_locations[str(camera_id)] = location
+                                    break
+                    except Exception:
+                        pass
+
                 self.captures[camera_id] = {
                     'url': stream_url,
+                    'fps': fps,
+                    'location': location,
                     'raw_queue': Queue(maxsize=int(YOLO_QUEUE_SIZE)),
-                    'latest_jpeg': None,  # 缓存压缩后的 JPEG 数据，实现单次编码多路分发
-                    'last_vlm_time': 0,   # 记录上次发送给 VLM 的时间戳
-                    'vlm_result': None,   # 记录 VLM 返回的行为分析结果
-                    'vlm_frame_counter': 0, # VLM 抽帧计数器
+                    'latest_jpeg': None,
+                    'last_vlm_time': 0,
+                    'vlm_result': None,
+                    'vlm_frame_counter': 0,
+                    'prev_frame_gray': None,
+                    'frame_count': 0,
+                    'person_detected': False,
+                    'person_lost_time': None,
                     'lock': threading.Lock(),
                     'stop_event': threading.Event(),
                     'threads': []
@@ -261,34 +297,59 @@ class VideoInference:
         url = c_data['url']
         print(f"[Capture] 启动拉流线程: {camera_id}")
         
-        # 精简参数：仅保留 tcp 和 nobuffer，去掉重排序等消耗 CPU 的指令
-        os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp|fflags;nobuffer"
-        cap = cv2.VideoCapture(url, cv2.CAP_FFMPEG)
+        os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp|fflags;nobuffer|flags;low_delay|probesize;32|analyzeduration;0|framedrop;1"
         
-        # 核心优化 1：源头降分辨率解码。强制底层解码器输出小图，极大减轻 FFMPEG 的 CPU 压力
+        # 判断是否为本地文件或摄像头设备名
+        is_local = not (url.startswith('rtsp://') or url.startswith('rtmp://') or url.startswith('http://'))
+        
+        if is_local:
+            cap = cv2.VideoCapture(url)
+        else:
+            cap = cv2.VideoCapture(url, cv2.CAP_FFMPEG)
+        
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, int(YOLO_IMG_SIZE))
-        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, int(YOLO_IMG_SIZE * 0.75)) # 假设 4:3，或者就让它自适应
+        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, int(YOLO_IMG_SIZE * 0.75))
         cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
         
         while not c_data['stop_event'].is_set():
+            start_time = time.time()
             ret, frame = cap.read()
             if not ret:
+                if is_local:
+                    cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+                    ret, frame = cap.read()
+                    if ret:
+                        try:
+                            while c_data['raw_queue'].full():
+                                c_data['raw_queue'].get_nowait()
+                            c_data['raw_queue'].put_nowait(frame)
+                        except Exception:
+                            pass
+                        continue
+                
                 time.sleep(0.01)
                 if not cap.isOpened():
                     cap.release()
-                    cap = cv2.VideoCapture(url, cv2.CAP_FFMPEG)
-                    cap.set(cv2.CAP_PROP_FRAME_WIDTH, int(YOLO_IMG_SIZE))
-                    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, int(YOLO_IMG_SIZE * 0.75))
-                    cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+                    cap = cv2.VideoCapture(url) if is_local else cv2.VideoCapture(url, cv2.CAP_FFMPEG)
+                    if not is_local:
+                        cap.set(cv2.CAP_PROP_FRAME_WIDTH, int(YOLO_IMG_SIZE))
+                        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, int(YOLO_IMG_SIZE * 0.75))
+                        cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
                 continue
             
-            # 将新帧丢入队列
             try:
                 while c_data['raw_queue'].full():
                     c_data['raw_queue'].get_nowait()
                 c_data['raw_queue'].put_nowait(frame)
-            except:
+            except Exception:
                 pass
+            
+            if is_local:
+                elapsed = time.time() - start_time
+                target_fps = c_data.get('fps', 30.0)
+                wait_time = (1.0 / target_fps) - elapsed
+                if wait_time > 0:
+                    time.sleep(wait_time)
         
         cap.release()
         print(f"[Capture] 停止拉流线程: {camera_id}")
@@ -303,6 +364,38 @@ class VideoInference:
         while not c_data['stop_event'].is_set():
             try:
                 frame = c_data['raw_queue'].get(timeout=1.0)
+                
+                current_time = time.time()
+                should_run_yolo = False
+                
+                if c_data.get('person_detected'):
+                    c_data['person_lost_time'] = None
+                    should_run_yolo = True
+                elif c_data.get('person_lost_time') and (current_time - c_data['person_lost_time'] < 3.0):
+                    should_run_yolo = True
+                else:
+                    c_data['frame_count'] += 1
+                    if c_data['frame_count'] % int(FRAME_CHECK_INTERVAL) == 0:
+                        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                        if c_data['prev_frame_gray'] is not None:
+                            diff = cv2.absdiff(gray, c_data['prev_frame_gray'])
+                            diff_pixels = cv2.countNonZero(diff)
+                            total_pixels = gray.shape[0] * gray.shape[1]
+                            if diff_pixels / total_pixels < float(FRAME_DIFF_PERCENT):
+                                ret, jpeg = cv2.imencode('.jpg', frame, [int(cv2.IMWRITE_JPEG_QUALITY), 90])
+                                if ret:
+                                    with c_data['lock']:
+                                        c_data['latest_jpeg'] = jpeg.tobytes()
+                                continue
+                        c_data['prev_frame_gray'] = gray.copy()
+                    should_run_yolo = True
+                
+                if not should_run_yolo:
+                    ret, jpeg = cv2.imencode('.jpg', frame, [int(cv2.IMWRITE_JPEG_QUALITY), 90])
+                    if ret:
+                        with c_data['lock']:
+                            c_data['latest_jpeg'] = jpeg.tobytes()
+                    continue
                 
                 # 核心优化 2：对齐 predict.py 的轻量级调用
                 # 根据模型类型动态调整参数
@@ -320,7 +413,27 @@ class VideoInference:
                 
                 results = self.model.predict(**infer_args)
                 
+                has_person = len(results[0].boxes) > 0
+                if has_person:
+                    c_data['person_detected'] = True
+                    c_data['person_lost_time'] = None
+                else:
+                    c_data['person_detected'] = False
+                    if c_data.get('person_lost_time') is None:
+                        c_data['person_lost_time'] = time.time()
+                
                 annotated_frame = results[0].plot()
+                
+                stats = self.fps_stats[camera_id]
+                stats["count"] += 1
+                elapsed = time.time() - stats["start_time"]
+                if elapsed >= 1.0:
+                    stats["display"] = stats["count"] / elapsed
+                    stats["count"] = 0
+                    stats["start_time"] = time.time()
+                
+                cv2.putText(annotated_frame, f"FPS: {stats['display']:.1f}", (20, 40),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
                 
                 # ==========================================
                 # VLM 多模态大模型异步联动分析逻辑
@@ -334,28 +447,20 @@ class VideoInference:
                         
                     # 只有达到抽帧间隔且超过冷却时间才触发
                     if frame_count >= int(VLM_FRAME_SKIP) and (current_time - last_vlm_time > float(VLM_ANALYZE_INTERVAL)):
-                        with c_data['lock']:
-                            c_data['last_vlm_time'] = current_time
-                            c_data['vlm_frame_counter'] = 0  # 触发后重置计数器
-                        
-                        # 开启一个独立的守护线程进行请求，绝不阻塞当前的视频流推理
-                        threading.Thread(
-                            target=self._run_vlm_analysis, 
-                            args=(camera_id, frame.copy()), 
-                            daemon=True
-                        ).start()
-                
-                # 计算 FPS 并叠加
-                stats = self.fps_stats[camera_id]
-                stats["count"] += 1
-                elapsed = time.time() - stats["start_time"]
-                if elapsed >= 1.0:
-                    stats["display"] = stats["count"] / elapsed
-                    stats["count"] = 0
-                    stats["start_time"] = time.time()
-                
-                cv2.putText(annotated_frame, f"PIPELINE FPS: {stats['display']:.1f}", (20, 40), 
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+                        with self.vlm_thread_lock:
+                            if self.vlm_active_threads >= 3:
+                                print(f"[VLM] 并发线程数已达上限(3)，跳过本次分析")
+                            else:
+                                self.vlm_active_threads += 1
+                                with c_data['lock']:
+                                    c_data['last_vlm_time'] = current_time
+                                    c_data['vlm_frame_counter'] = 0
+                                
+                                threading.Thread(
+                                    target=self._run_vlm_analysis, 
+                                    args=(camera_id, frame.copy()), 
+                                    daemon=True
+                                ).start()
                 
                 # 核心优化 3：降低 JPEG 压缩质量以换取极速编码
                 ret, jpeg = cv2.imencode('.jpg', annotated_frame, [int(cv2.IMWRITE_JPEG_QUALITY), 95])
@@ -387,6 +492,8 @@ class VideoInference:
             
         if c_data:
             c_data['stop_event'].set()
+            for t in c_data.get('threads', []):
+                t.join(timeout=3.0)
 
     def stop_all(self):
         with self.lock:
@@ -396,9 +503,7 @@ class VideoInference:
     def _run_vlm_analysis(self, camera_id, frame):
         """专门负责与 Ollama / OpenAI API 交互的后台大模型推理子线程"""
         try:
-            # 1. 缩放图像以节省带宽和推理算力
-            resized = cv2.resize(frame, (640, 480))
-            ret, buffer = cv2.imencode('.jpg', resized, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
+            ret, buffer = cv2.imencode('.jpg', frame, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
             if not ret: return
             
             b64_image = base64.b64encode(buffer).decode('utf-8')
@@ -482,14 +587,13 @@ class VideoInference:
                 
         except Exception as e:
             print(f"[VLM] 大模型请求异常: {e}")
+        finally:
+            with self.vlm_thread_lock:
+                self.vlm_active_threads -= 1
 
     def _handle_violent_capture(self, camera_id, frame, vlm_result):
         """当 VLM 检测到暴力行为时，自动抓拍图片、保存数据库、并推送 SocketIO 警报"""
         try:
-            import os
-            import uuid
-            from datetime import datetime
-            
             upload_path = os.path.join(
                 os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                 'static', 'captures'
@@ -500,16 +604,19 @@ class VideoInference:
             filepath = os.path.join(upload_path, filename)
             cv2.imwrite(filepath, frame)
             
-            location = '未知位置'
-            try:
-                from blueprints.mqtt_manager import mqtt_manager
-                if mqtt_manager and mqtt_manager.latest_jetson_info:
-                    for cam in mqtt_manager.latest_jetson_info.get('cameras', []):
-                        if str(cam.get('id', '')) == str(camera_id):
-                            location = cam.get('location', '未知位置')
-                            break
-            except:
-                pass
+            location = self.camera_locations.get(str(camera_id), '未知位置')
+            if location == '未知位置':
+                try:
+                    from blueprints.mqtt_manager import mqtt_manager
+                    if mqtt_manager and mqtt_manager.latest_jetson_info:
+                        for cam in mqtt_manager.latest_jetson_info.get('cameras', []):
+                            if str(cam.get('id', '')) == str(camera_id):
+                                loc = cam.get('location', '未知位置')
+                                self.camera_locations[str(camera_id)] = loc
+                                location = loc
+                                break
+                except Exception:
+                    pass
             
             threat_level = vlm_result.get('threat_level', 'low')
             behavior_type = vlm_result.get('behavior_type', 'normal')
@@ -543,7 +650,7 @@ class VideoInference:
                 print(f"[VLM 抓拍] 数据库写入失败: {e}")
                 try:
                     db.session.rollback()
-                except:
+                except Exception:
                     pass
             
             try:

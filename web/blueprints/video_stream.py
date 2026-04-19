@@ -80,29 +80,50 @@ stream_manager = StreamManager()
 
 
 def list_cameras():
-    """列出所有摄像头 (仅使用动态MQTT发现)"""
+    """列出所有摄像头 (同时包含静态配置和动态发现)"""
     from blueprints.mqtt_manager import mqtt_manager
     
-    # 检查是否连接了MQTT服务器
-    if not mqtt_manager or not mqtt_manager.connected:
-        return jsonify({
-            'cameras': [],
-            'mqtt_connected': False,
-            'error': '请先在系统设置中连接远程服务器'
-        }), 200
+    all_cameras = []
+    config_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'cameras.json')
+    if os.path.exists(config_path):
+        try:
+            with open(config_path, 'r', encoding='utf-8') as f:
+                config = json.load(f)
+                for cam in config.get('cameras', []):
+                    all_cameras.append({
+                        'id': str(cam['id']),
+                        'name': cam.get('location', f"静态源 {cam['id']}"),
+                        'webrtc_url': 'static_source',
+                        'is_dynamic': False,
+                        'is_static': True
+                    })
+        except Exception as e:
+            print(f"[Stream] 加载静态配置失败: {e}")
 
-    # 获取动态MQTT发现的摄像头
-    dynamic_cameras = []
-    active_info = mqtt_manager.get_active_cameras()
-    for cam in active_info:
-        dynamic_cameras.append({
-            'id': cam['id'],
-            'name': cam.get('location', f"摄像头 {cam['id']}"),
-            'webrtc_url': cam.get('http_url'), # 兼容前端
-            'is_dynamic': True
-        })
+    mqtt_connected = False
+    if mqtt_manager and mqtt_manager.connected:
+        mqtt_connected = True
+        active_info = mqtt_manager.get_active_cameras()
+        
+        existing_ids = {c['id'] for c in all_cameras}
+        
+        for cam in active_info:
+            cam_id = str(cam['id'])
+            if cam_id not in existing_ids:
+                all_cameras.append({
+                    'id': cam_id,
+                    'name': cam.get('location', f"动态摄像头 {cam_id}"),
+                    'webrtc_url': cam.get('http_url'),
+                    'is_dynamic': True,
+                    'is_static': False
+                })
+            else:
+                for c in all_cameras:
+                    if c['id'] == cam_id:
+                        c['is_dynamic'] = True
+                        c['webrtc_url'] = cam.get('http_url')
     
     return jsonify({
-        'cameras': dynamic_cameras,
-        'mqtt_connected': True
+        'cameras': all_cameras,
+        'mqtt_connected': mqtt_connected
     }), 200
